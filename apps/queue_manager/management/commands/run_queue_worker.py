@@ -60,6 +60,25 @@ class Command(BaseCommand):
                 if not profile:
                     raise ValueError("User has no linked Google profile.")
                     
+                from django.utils import timezone
+                from datetime import timedelta
+                from apps.authentication.services import refresh_access_token
+                
+                # Refresh token if expiring within 5 minutes
+                if profile.token_expiry and profile.token_expiry <= timezone.now() + timedelta(minutes=5):
+                    if profile.google_refresh_token:
+                        self.stdout.write(self.style.WARNING(f"Token expired for {job.user.email}, refreshing..."))
+                        try:
+                            new_tokens = refresh_access_token(profile.google_refresh_token)
+                            profile.google_access_token = new_tokens['access_token']
+                            profile.token_expiry = timezone.now() + timedelta(seconds=new_tokens.get('expires_in', 3600))
+                            profile.save()
+                            self.stdout.write(self.style.SUCCESS(f"Successfully refreshed token for {job.user.email}"))
+                        except Exception as e:
+                            raise ValueError(f"Failed to refresh Google token: {e}")
+                    else:
+                        raise ValueError("Token expired and no refresh token available.")
+                    
                 target_email = result.get('hr_email')
                 if not target_email:
                     result['hr_email'] = job.user.email
