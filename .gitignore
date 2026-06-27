@@ -31,3 +31,8 @@ doc/
 # Test files
 test_*.py
 test_*.jpg
+
+# Media files
+media/screenshots/
+media/resumes/
+media/

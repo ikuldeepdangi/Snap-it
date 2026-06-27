@@ -1,120 +1,305 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="animate-in fade-in slide-in-from-bottom-4 duration-700">
-    <div class="flex items-center justify-between mb-8">
-        <h1 class="text-2xl font-bold">Email History</h1>
+<div class="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <!-- Premium Header -->
+    <div class="mb-10">
+        <h1 class="text-3xl font-semibold text-white tracking-tight mb-2">Email Activity</h1>
+        <p class="text-neutral-400 text-[15px]">Track every application email sent from Snap<span class="text-[#00c2ff]">It</span>.</p>
+        
+        <!-- Toolbar -->
+        <div class="mt-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <!-- Search -->
+            <form method="GET" action="" class="relative w-full md:w-80 group">
+                <input type="hidden" name="status" value="{{ current_status }}">
+                <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 group-focus-within:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search Company, Role, or Recipient..." class="w-full bg-neutral-900/50 border border-neutral-800 focus:border-neutral-700 focus:ring-1 focus:ring-neutral-700 rounded-lg pl-10 pr-4 py-2.5 text-[14px] text-white placeholder-neutral-500 transition-all outline-none shadow-sm">
+            </form>
+            
+            <!-- Filter Pills -->
+            <div class="flex items-center gap-1.5 p-1 bg-neutral-900/40 rounded-lg border border-neutral-800/80">
+                <a href="?status=ALL{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-1.5 rounded-md {% if current_status == 'ALL' %}bg-neutral-800 text-white shadow-sm border border-neutral-700/50{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/50 border border-transparent{% endif %} text-[13px] font-medium transition-colors">All</a>
+                <a href="?status=COMPLETED{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-1.5 rounded-md {% if current_status == 'COMPLETED' %}bg-neutral-800 text-white shadow-sm border border-neutral-700/50{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/50 border border-transparent{% endif %} text-[13px] font-medium transition-colors">Sent</a>
+                <a href="?status=FAILED{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-1.5 rounded-md {% if current_status == 'FAILED' %}bg-neutral-800 text-white shadow-sm border border-neutral-700/50{% else %}text-neutral-400 hover:text-white hover:bg-neutral-800/50 border border-transparent{% endif %} text-[13px] font-medium transition-colors">Failed</a>
+            </div>
+        </div>
     </div>
 
-    <div class="glass-card rounded-2xl overflow-hidden">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-neutral-900/50 border-b border-neutral-800 text-neutral-400">
-                <tr>
-                    <th class="px-6 py-4 font-medium">Date</th>
-                    <th class="px-6 py-4 font-medium">Target Role</th>
-                    <th class="px-6 py-4 font-medium">Company</th>
-                    <th class="px-6 py-4 font-medium">Status</th>
-                    <th class="px-6 py-4 font-medium text-right">Action</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-800">
-                {% for job in jobs %}
-                <tr class="hover:bg-neutral-800/30 transition-colors">
-                    <td class="px-6 py-4 text-neutral-300">{{ job.created_at|date:"M d, Y H:i" }}</td>
-                    <td class="px-6 py-4 font-medium">{{ job.result_data.role|default:"-" }}</td>
-                    <td class="px-6 py-4 text-neutral-400">{{ job.result_data.company|default:"-" }}</td>
-                    <td class="px-6 py-4">
-                        {% if job.status == 'COMPLETED' %}
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Sent
+    <!-- Timeline / List (Linear Style) -->
+    <div class="bg-[#0c0c0c] border border-neutral-800/60 rounded-xl shadow-2xl">
+        <div class="grid grid-cols-12 gap-4 px-8 py-3.5 border-b border-neutral-800/60 bg-neutral-900/30 text-[11px] font-semibold text-neutral-500 uppercase tracking-widest rounded-t-xl">
+            <div class="col-span-4">Target Application</div>
+            <div class="col-span-3">Recipient</div>
+            <div class="col-span-2">Status</div>
+            <div class="col-span-2">Time</div>
+            <div class="col-span-1 text-right"></div>
+        </div>
+
+        <div class="flex flex-col divide-y divide-neutral-800/40">
+            {% for job in jobs %}
+            
+            <div class="grid grid-cols-12 gap-4 px-8 py-4 items-center hover:bg-neutral-800/30 hover:-translate-y-[1px] hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)] transition-all duration-200 group {% if job.status == 'COMPLETED' or job.status == 'FAILED' %}cursor-pointer{% else %}cursor-default{% endif %}"
+                {% if job.status == 'COMPLETED' %}
+                    onclick="openPreviewModal(this)"
+                    data-to="{{ job.result_data.hr_email }}" 
+                    data-subject="{{ job.result_data.email_subject }}" 
+                    data-body="{{ job.result_data.email_body }}"
+                    data-from="{{ request.user.email }}"
+                    data-date="{{ job.created_at|date:'c' }}"
+                {% elif job.status == 'FAILED' %}
+                    onclick="openErrorModal(this)"
+                    data-error="{{ job.result_data.worker_error }}"
+                    data-date="{{ job.created_at|date:'c' }}"
+                {% endif %}
+            >
+            
+                <!-- Company & Role -->
+                <div class="col-span-4 flex flex-col gap-0.5 pr-4">
+                    <span class="text-[14px] font-medium text-neutral-200 truncate group-hover:text-white transition-colors">{{ job.result_data.company|default:"Unknown Company" }}</span>
+                    <span class="text-[13px] text-neutral-500 truncate group-hover:text-neutral-400 transition-colors">{{ job.result_data.role|default:"Role Not Specified" }}</span>
+                </div>
+                
+                <!-- Recipient -->
+                <div class="col-span-3 flex items-center pr-4">
+                    <span class="text-[13px] text-neutral-400 truncate group-hover:text-neutral-300 transition-colors">
+                        {{ job.result_data.hr_email|default:"N/A" }}
+                    </span>
+                </div>
+                
+                <!-- Status -->
+                <div class="col-span-2 flex items-center">
+                    {% if job.status == 'COMPLETED' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-medium border border-emerald-500/5">
+                            Sent
                         </span>
-                        {% elif job.status == 'FAILED' %}
-                        <div class="flex flex-col gap-1.5">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-medium w-fit">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Failed
-                            </span>
-                            {% if job.result_data.worker_error %}
-                            <span class="text-xs text-red-400/80 max-w-xs truncate" title="{{ job.result_data.worker_error }}">
-                                {{ job.result_data.worker_error }}
-                            </span>
-                            {% endif %}
+                    {% elif job.status == 'FAILED' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[11px] font-medium border border-red-500/5">
+                            Failed
+                        </span>
+                    {% elif job.status == 'PENDING' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[11px] font-medium border border-amber-500/5">
+                            Pending
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[11px] font-medium border border-blue-500/5">
+                            {{ job.get_status_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <!-- Time -->
+                <div class="col-span-2 flex items-center">
+                    <span class="text-[13px] text-neutral-500 time-relative" data-time="{{ job.created_at|date:'c' }}">
+                        {{ job.created_at|date:"M d" }}
+                    </span>
+                </div>
+                
+                <!-- Actions -->
+                <div class="col-span-1 flex justify-end">
+                    {% if job.status == 'COMPLETED' and job.result_data %}
+                        <div class="text-neutral-500 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100 flex items-center gap-1.5">
+                            <span class="text-[13px] font-medium">Open</span>
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
                         </div>
-                        {% else %}
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> {{ job.get_status_display }}
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        {% if job.status == 'COMPLETED' and job.result_data %}
-                        <button onclick='openModal({{ job.result_data|safe }})' class="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-                            Preview
-                        </button>
-                        {% else %}
-                        <span class="text-neutral-600">-</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-neutral-500">
-                        No processing jobs found yet. Submit a screenshot on the dashboard!
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    {% elif job.status == 'FAILED' %}
+                        <div class="text-red-400/70 group-hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex items-center gap-1.5">
+                            <span class="text-[13px] font-medium">View</span>
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        </div>
+                    {% endif %}
+                </div>
+                
+            </div>
+            {% empty %}
+            <!-- Empty State -->
+            <div class="px-6 py-24 flex flex-col items-center justify-center text-center">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-neutral-800 to-neutral-700/50 flex items-center justify-center mb-6 shadow-xl border border-neutral-700">
+                    <svg class="w-8 h-8 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                </div>
+                <h3 class="text-[17px] font-medium text-white mb-2">No emails have been sent yet.</h3>
+                <p class="text-neutral-500 text-[14px] max-w-sm mb-6">Your application history will appear here once you process your first screenshot.</p>
+                <a href="{% url 'dashboard' %}" class="px-5 py-2.5 rounded-lg bg-white text-black hover:bg-neutral-200 text-sm font-semibold transition-colors shadow-lg">Send First Email</a>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination Controls -->
+        {% if jobs.has_other_pages %}
+        <div class="px-8 py-4 border-t border-neutral-800/60 bg-neutral-900/10 flex items-center justify-between rounded-b-xl">
+            <span class="text-[13px] text-neutral-500 font-medium">
+                Page <span class="text-neutral-300">{{ jobs.number }}</span> of <span class="text-neutral-300">{{ jobs.paginator.num_pages }}</span>
+            </span>
+            <div class="flex items-center gap-2">
+                {% if jobs.has_previous %}
+                <a href="?page={{ jobs.previous_page_number }}&status={{ current_status }}&q={{ search_query }}" class="px-3 py-1.5 rounded-md bg-neutral-800/50 hover:bg-neutral-700 text-neutral-300 text-[13px] font-medium transition-colors border border-neutral-700/50 shadow-sm">Previous</a>
+                {% else %}
+                <span class="px-3 py-1.5 rounded-md bg-transparent text-neutral-700 text-[13px] font-medium cursor-not-allowed">Previous</span>
+                {% endif %}
+                
+                {% if jobs.has_next %}
+                <a href="?page={{ jobs.next_page_number }}&status={{ current_status }}&q={{ search_query }}" class="px-3 py-1.5 rounded-md bg-neutral-800/50 hover:bg-neutral-700 text-neutral-300 text-[13px] font-medium transition-colors border border-neutral-700/50 shadow-sm">Next</a>
+                {% else %}
+                <span class="px-3 py-1.5 rounded-md bg-transparent text-neutral-700 text-[13px] font-medium cursor-not-allowed">Next</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- Modal -->
-<div id="preview-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="glass-card rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform scale-95 opacity-0 transition-all duration-300" id="modal-content">
-        <div class="px-6 py-4 border-b border-neutral-800 flex items-center justify-between">
-            <h3 class="text-lg font-semibold" id="modal-subject">Email Preview</h3>
-            <button onclick="closeModal()" class="text-neutral-400 hover:text-white transition-colors">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+<!-- Modal Overlay -->
+<div id="modal-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity duration-300 opacity-0" onclick="closeAllModals()"></div>
+
+<!-- Email Preview Modal -->
+<div id="preview-modal" class="fixed inset-y-0 right-0 w-full max-w-2xl bg-[#0c0c0c] border-l border-neutral-800 z-50 transform translate-x-full transition-transform duration-300 ease-in-out shadow-2xl flex flex-col">
+    <!-- Header -->
+    <div class="px-8 py-5 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/30">
+        <div class="flex items-center gap-3 text-neutral-400 text-sm font-medium">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Message Preview
         </div>
-        <div class="p-6 overflow-y-auto">
-            <div class="mb-4 text-sm text-neutral-400">
-                To: <span class="text-white" id="modal-to"></span>
+        <button onclick="closeAllModals()" class="p-2 -mr-2 text-neutral-500 hover:text-white rounded-md hover:bg-neutral-800 transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    </div>
+    
+    <!-- Email Metadata -->
+    <div class="px-8 py-6 border-b border-neutral-800/80 bg-neutral-900/10">
+        <div class="flex flex-col gap-3 w-full">
+            <div class="flex items-center">
+                <span class="text-neutral-500 text-[13px] w-14 font-medium">From</span>
+                <span class="text-neutral-200 font-medium text-[14px]" id="modal-from"></span>
             </div>
-            <div class="mb-6 text-sm text-neutral-400">
-                Subject: <span class="text-white font-medium" id="modal-subject-text"></span>
+            <div class="flex items-center">
+                <span class="text-neutral-500 text-[13px] w-14 font-medium">To</span>
+                <span class="text-white font-medium bg-neutral-800/50 px-2 py-0.5 rounded text-[13px]" id="modal-to"></span>
             </div>
-            <div class="bg-black/50 rounded-lg p-4 border border-neutral-800 text-sm whitespace-pre-wrap text-neutral-300" id="modal-body">
+            <div class="flex items-center">
+                <span class="text-neutral-500 text-[13px] w-14 font-medium">Date</span>
+                <span class="text-neutral-400 text-[13px]" id="modal-date"></span>
             </div>
         </div>
-        <div class="px-6 py-4 border-t border-neutral-800 text-right bg-neutral-900/30">
-            <button onclick="closeModal()" class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-sm font-medium transition-colors border border-neutral-700">Close</button>
+        <div class="mt-6 pt-5 border-t border-neutral-800/50">
+            <h2 class="text-xl font-semibold text-white tracking-tight leading-snug" id="modal-subject-text"></h2>
+        </div>
+    </div>
+    
+    <!-- Email Body -->
+    <div class="p-8 overflow-y-auto flex-1 bg-[#0c0c0c] text-neutral-300 leading-relaxed text-[15px] selection:bg-neutral-800" id="modal-body" style="white-space: pre-wrap; font-family: 'Inter', sans-serif;">
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div id="error-modal" class="fixed inset-y-0 right-0 w-full max-w-lg bg-[#0c0c0c] border-l border-neutral-800 z-50 transform translate-x-full transition-transform duration-300 ease-in-out shadow-2xl flex flex-col">
+    <div class="px-8 py-5 border-b border-neutral-800 flex items-center justify-between bg-red-500/5">
+        <div class="flex items-center gap-3 text-red-400 text-sm font-medium">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Failed Delivery
+        </div>
+        <button onclick="closeAllModals()" class="p-2 -mr-2 text-neutral-500 hover:text-white rounded-md hover:bg-neutral-800 transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    </div>
+    <div class="p-8">
+        <h3 class="text-lg font-semibold text-white mb-2">Job Execution Failed</h3>
+        <p class="text-neutral-400 text-sm mb-6" id="error-date"></p>
+        
+        <div class="bg-neutral-900/50 border border-neutral-800 rounded-lg p-5">
+            <div class="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-3">Reason</div>
+            <div class="text-red-400/90 text-[14px] leading-relaxed font-mono" id="error-body"></div>
+        </div>
+        
+        <div class="mt-8 flex gap-3">
+            <button onclick="closeAllModals()" class="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium transition-colors">Close</button>
+            <button class="px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 text-sm font-semibold transition-colors">Retry Job</button>
         </div>
     </div>
 </div>
 
 <script>
-    function openModal(data) {
-        document.getElementById('preview-modal').classList.remove('hidden');
-        document.getElementById('modal-to').innerText = data.hr_email || 'Unknown';
-        document.getElementById('modal-subject-text').innerText = data.email_subject || 'No Subject';
-        document.getElementById('modal-body').innerText = data.email_body || 'No content generated.';
+    // Relative Time Formatting
+    function updateRelativeTimes() {
+        const elements = document.querySelectorAll('.time-relative');
+        const now = new Date();
         
-        // trigger animation
-        setTimeout(() => {
-            const mc = document.getElementById('modal-content');
-            mc.classList.remove('scale-95', 'opacity-0');
-            mc.classList.add('scale-100', 'opacity-100');
-        }, 10);
+        elements.forEach(el => {
+            const dateStr = el.getAttribute('data-time');
+            if (!dateStr) return;
+            
+            const date = new Date(dateStr);
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            // Format time (e.g. 6:24 AM)
+            const timeOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
+            const timeStr = date.toLocaleTimeString('en-US', timeOpts);
+            
+            if (diffDays === 0 && now.getDate() === date.getDate()) {
+                el.textContent = `Today • ${timeStr}`;
+            } else if (diffDays <= 1) {
+                el.textContent = `Yesterday • ${timeStr}`;
+            } else if (diffDays < 7) {
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                el.textContent = `${days[date.getDay()]} • ${timeStr}`;
+            } else {
+                const dateOpts = { month: 'short', day: 'numeric' };
+                el.textContent = date.toLocaleDateString('en-US', dateOpts);
+            }
+        });
     }
 
-    function closeModal() {
-        const mc = document.getElementById('modal-content');
-        mc.classList.remove('scale-100', 'opacity-100');
-        mc.classList.add('scale-95', 'opacity-0');
+    // Run on load
+    document.addEventListener('DOMContentLoaded', updateRelativeTimes);
+
+    // Modal Logic
+    function openPreviewModal(el) {
+        document.getElementById('modal-backdrop').classList.remove('hidden');
+        document.getElementById('preview-modal').classList.remove('translate-x-full');
         
         setTimeout(() => {
-            document.getElementById('preview-modal').classList.add('hidden');
+            document.getElementById('modal-backdrop').classList.add('opacity-100');
+        }, 10);
+        
+        document.getElementById('modal-to').textContent = el.getAttribute('data-to') || 'Unknown';
+        document.getElementById('modal-from').textContent = el.getAttribute('data-from') || 'Unknown';
+        document.getElementById('modal-subject-text').textContent = el.getAttribute('data-subject') || 'No Subject';
+        document.getElementById('modal-body').textContent = el.getAttribute('data-body') || '';
+        
+        // Format date for modal
+        const d = new Date(el.getAttribute('data-date'));
+        document.getElementById('modal-date').textContent = d.toLocaleString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+        });
+    }
+    
+    function openErrorModal(el) {
+        document.getElementById('modal-backdrop').classList.remove('hidden');
+        document.getElementById('error-modal').classList.remove('translate-x-full');
+        
+        setTimeout(() => {
+            document.getElementById('modal-backdrop').classList.add('opacity-100');
+        }, 10);
+        
+        document.getElementById('error-body').textContent = el.getAttribute('data-error') || 'Unknown internal error occurred.';
+        
+        const d = new Date(el.getAttribute('data-date'));
+        document.getElementById('error-date').textContent = d.toLocaleString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+        });
+    }
+
+    function closeAllModals() {
+        document.getElementById('modal-backdrop').classList.remove('opacity-100');
+        document.getElementById('preview-modal').classList.add('translate-x-full');
+        document.getElementById('error-modal').classList.add('translate-x-full');
+        
+        setTimeout(() => {
+            document.getElementById('modal-backdrop').classList.add('hidden');
         }, 300);
     }
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAllModals();
+    });
 </script>
 {% endblock %}

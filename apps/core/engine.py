@@ -47,11 +47,13 @@ def get_genai_client():
         raise RuntimeError("Missing GEMINI_API_KEY in .env")
     return genai.Client(api_key=api_key)
 
-def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, model: str = "gemini-1.5-flash") -> Dict[str, Any]:
+def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, model: str = "gemini-3.1-flash-lite") -> Dict[str, Any]:
     """
     Uses Gemini's Vision capabilities to extract structured parameters from job screenshots
     and generate a personalized email.
     """
+    print("new way  -")
+    
     client = get_genai_client()
     path = Path(screenshot_path)
     pil_image = Image.open(path)

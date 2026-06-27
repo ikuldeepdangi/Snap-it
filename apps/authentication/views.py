@@ -20,7 +20,8 @@ def landing_page_view(request):
 
 def login_view(request):
     """Redirect to Google's OAuth2 consent screen."""
-    return redirect(get_google_auth_url())
+    redirect_uri = request.build_absolute_uri(reverse('oauth_callback'))
+    return redirect(get_google_auth_url(redirect_uri))
 
 def oauth_callback_view(request):
     """Handle the OAuth2 callback from Google."""
@@ -29,7 +30,8 @@ def oauth_callback_view(request):
         return redirect('landing_page')
         
     try:
-        tokens = exchange_code_for_tokens(code)
+        redirect_uri = request.build_absolute_uri(reverse('oauth_callback'))
+        tokens = exchange_code_for_tokens(code, redirect_uri)
         access_token = tokens.get('access_token')
         refresh_token = tokens.get('refresh_token')
         expires_in = tokens.get('expires_in', 3600)
@@ -99,7 +101,46 @@ def dashboard_view(request):
         'resume': resume
     })
 
+from django.core.paginator import Paginator
+
 @login_required
 def history_view(request):
-    jobs = ProcessingJob.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'core/history.html', {'jobs': jobs})
+    jobs_list = ProcessingJob.objects.filter(user=request.user)
+    
+    # Filter by status
+    status = request.GET.get('status')
+    if status in ['COMPLETED', 'FAILED']:
+        jobs_list = jobs_list.filter(status=status)
+        
+    jobs_list = jobs_list.order_by('-created_at')
+    
+    # Search locally to safely handle JSON parsing differences across SQLites
+    q = request.GET.get('q', '').strip()
+    if q:
+        q_lower = q.lower()
+        filtered_jobs = []
+        for job in jobs_list:
+            if job.result_data:
+                company = str(job.result_data.get('company', '')).lower()
+                role = str(job.result_data.get('role', '')).lower()
+                hr_email = str(job.result_data.get('hr_email', '')).lower()
+                if q_lower in company or q_lower in role or q_lower in hr_email:
+                    filtered_jobs.append(job)
+            elif q_lower in job.status.lower():
+                filtered_jobs.append(job)
+        jobs_list = filtered_jobs
+
+    paginator = Paginator(jobs_list, 5)  # Show 5 items per page
+    page_number = request.GET.get('page')
+    jobs = paginator.get_page(page_number)
+    
+    return render(request, 'core/history.html', {
+        'jobs': jobs,
+        'current_status': status or 'ALL',
+        'search_query': q
+    })
+
+def logout_view(request):
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect('landing_page')
