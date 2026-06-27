@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include('apps.authentication.urls')),
     path('queue/', include('apps.queue_manager.urls')),
     path('billing/', include('apps.billing.urls')),
+    path('telegram-integration/', include('apps.bot.urls')),
 ]
 
 if settings.DEBUG:

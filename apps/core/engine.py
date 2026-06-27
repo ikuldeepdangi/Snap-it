@@ -140,3 +140,21 @@ def send_user_email(profile, payload: Dict[str, Any], attachment_path: str) -> b
     except Exception as e:
         print(f"Failed to send email via Gmail API: {e}")
         raise ValueError(f"Gmail API Error: {e}")
+
+import asyncio
+from telegram import Bot
+
+def send_async_telegram_alert(chat_id: int, message_text: str):
+    """Synchronous thread-safe bridge letting the worker cluster push alerts back to Telegram chat."""
+    if not chat_id:
+        return
+        
+    async def _send():
+        bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
+        async with bot:
+            await bot.send_message(chat_id=chat_id, text=message_text)
+            
+    try:
+        asyncio.run(_send())
+    except Exception as e:
+        print(f"Failed to transmit background telegram alert log: {e}")
