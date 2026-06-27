@@ -29,15 +29,17 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-i9h!$g0ro2v__g&eidv+#bwf)x
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
-ALLOWED_HOSTS = ['dosnapit.com', 'www.dosnapit.com']
-base_url_env = os.getenv("BASE_URL", "")
-if base_url_env:
-    host = base_url_env.split(":")[0]
+BASE_URL = os.getenv("BASE_URL", "")
+ALLOWED_HOSTS = ['dosnapit.com', 'www.dosnapit.com',BASE_URL]
+
+
+if BASE_URL:
+    host = BASE_URL.split(":")[0]
     if host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
 
 if DEBUG:
-    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '[::1]'])
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '[::1]', '*'])
 
 # Production Security Policies
 SECURE_SSL_REDIRECT = not DEBUG
@@ -58,6 +60,7 @@ INSTALLED_APPS = [
     'apps.billing',
     'apps.queue_manager',
     'apps.core',
+    'apps.bot',
 ]
 
 MIDDLEWARE = [

@@ -95,6 +95,22 @@ class Command(BaseCommand):
                     job.status = 'COMPLETED'
                     job.save()
                     self.stdout.write(self.style.SUCCESS(f"[Step 6] Credit deducted. Job {job.id} COMPLETED successfully."))
+                    
+                    from apps.core.engine import send_async_telegram_alert
+                    if hasattr(job.user, 'telegram_profile') and job.user.telegram_profile.is_verified:
+                        # Refresh wallet from DB to get the new balance
+                        job.user.credit_wallet.refresh_from_db()
+                        rem_balance = job.user.credit_wallet.balance
+                        
+                        tg_id = job.user.telegram_profile.telegram_chat_id
+                        notification_text = (
+                            f"⚡ Job Application Dispatched Successfully!\n"
+                            f"🏢 Company: {result.get('company')}\n"
+                            f"🎯 Position: {result.get('role')}\n"
+                            f"📬 Destination HR Address: {result.get('hr_email')}\n\n"
+                            f"💸 Deducted 1 Credit. Remaining Balance: {rem_balance} credits."
+                        )
+                        send_async_telegram_alert(tg_id, notification_text)
                 else:
                     raise ValueError("Insufficient credit balance during final processing step.")
                     
@@ -106,3 +122,17 @@ class Command(BaseCommand):
                 job.result_data['worker_error'] = error_msg
                 job.save()
                 self.stderr.write(self.style.ERROR(f"Job {job.id} FAILED: {error_msg}"))
+                
+                # Send error notification to Telegram
+                try:
+                    from apps.core.engine import send_async_telegram_alert
+                    if hasattr(job.user, 'telegram_profile') and job.user.telegram_profile.is_verified:
+                        tg_id = job.user.telegram_profile.telegram_chat_id
+                        notification_text = (
+                            f"❌ Job Processing Failed!\n\n"
+                            f"An error occurred while processing your screenshot: {error_msg}\n"
+                            f"Please make sure the screenshot clearly shows the HR email and try again."
+                        )
+                        send_async_telegram_alert(tg_id, notification_text)
+                except Exception as alert_e:
+                    self.stderr.write(self.style.ERROR(f"Failed to send Telegram error alert: {alert_e}"))
