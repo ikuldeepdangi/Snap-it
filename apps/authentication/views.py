@@ -103,3 +103,8 @@ def dashboard_view(request):
 def history_view(request):
     jobs = ProcessingJob.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'core/history.html', {'jobs': jobs})
+
+def logout_view(request):
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect('landing_page')

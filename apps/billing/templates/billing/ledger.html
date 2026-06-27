@@ -316,7 +316,7 @@
             </label>
             <div class="input-wrapper">
                 <span class="currency-prefix">₹</span>
-                <input type="number" id="amount-input" class="amount-input" placeholder="Enter amount (min ₹50)..." min="50" step="1">
+                <input type="number" id="amount-input" class="amount-input" placeholder="Enter amount..." min="1" step="1">
             </div>
             <div class="points-preview">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -379,15 +379,15 @@
         
         amountInput.addEventListener('input', function() {
             const val = parseInt(this.value);
-            if (val && val >= 50) {
+            if (val && val >= 1) {
                 pointsPreview.textContent = val;
                 payButton.disabled = false;
                 payButton.textContent = `Pay ₹${val}.00 Securely via UPI / Cards`;
             } else {
                 pointsPreview.textContent = '0';
                 payButton.disabled = true;
-                if (val && val < 50) {
-                    payButton.textContent = `Minimum ₹50 Required`;
+                if (val && val < 1) {
+                    payButton.textContent = `Minimum ₹1 Required`;
                 } else {
                     payButton.textContent = `Pay Securely via UPI / Cards`;
                 }
@@ -396,7 +396,7 @@
 
         payButton.addEventListener('click', async function() {
             const amount = parseInt(amountInput.value);
-            if (!amount || amount < 50) return;
+            if (!amount || amount < 1) return;
             
             payButton.disabled = true;
             payButton.textContent = 'Processing...';
