@@ -1,0 +1,173 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto pb-12">
+    <div class="mb-10 text-center">
+        <h1 class="text-3xl font-bold mb-3">Telegram Integration</h1>
+        <p class="text-neutral-400">Connect your Telegram account to SnapIt and apply to jobs directly from your phone.
+        </p>
+    </div>
+
+    <!-- Progress Stepper -->
+    <div class="mb-10">
+        <div class="flex items-center justify-between relative">
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-neutral-800 rounded-full z-0"></div>
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#00c2ff] rounded-full z-0 transition-all duration-500"
+                style="width: {% if profile.is_verified %}100%{% elif profile.telegram_username %}50%{% else %}0%{% endif %}">
+            </div>
+
+            <!-- Step 1 -->
+            <div class="relative z-10 flex flex-col items-center">
+                <div
+                    class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors {% if profile.telegram_username %}bg-[#00c2ff] text-black{% else %}bg-[#00c2ff] text-black ring-4 ring-[#00c2ff]/20{% endif %}">
+                    {% if profile.telegram_username %}✓{% else %}1{% endif %}
+                </div>
+                <span
+                    class="mt-3 text-sm font-medium {% if profile.telegram_username %}text-white{% else %}text-[#00c2ff]{% endif %}">Account</span>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="relative z-10 flex flex-col items-center">
+                <div
+                    class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors {% if profile.is_verified %}bg-[#00c2ff] text-black{% elif profile.telegram_username %}bg-[#00c2ff] text-black ring-4 ring-[#00c2ff]/20{% else %}bg-neutral-800 text-neutral-400{% endif %}">
+                    {% if profile.is_verified %}✓{% else %}2{% endif %}
+                </div>
+                <span
+                    class="mt-3 text-sm font-medium {% if profile.is_verified %}text-white{% elif profile.telegram_username %}text-[#00c2ff]{% else %}text-neutral-500{% endif %}">Connect</span>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="relative z-10 flex flex-col items-center">
+                <div
+                    class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors {% if profile.is_verified %}bg-[#00c2ff] text-black ring-4 ring-[#00c2ff]/20{% else %}bg-neutral-800 text-neutral-400{% endif %}">
+                    3
+                </div>
+                <span
+                    class="mt-3 text-sm font-medium {% if profile.is_verified %}text-[#00c2ff]{% else %}text-neutral-500{% endif %}">Ready</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Card -->
+    <div
+        class="glass-card rounded-2xl p-8 lg:p-10 border border-neutral-800 shadow-2xl bg-neutral-900/40 backdrop-blur-xl relative overflow-hidden">
+
+        <!-- Background Glow -->
+        <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-[#00c2ff]/5 blur-[100px] pointer-events-none">
+        </div>
+
+        {% if profile.is_verified %}
+        <!-- STEP 3: SUCCESS -->
+        <div class="text-center py-6 relative z-10">
+            <div
+                class="w-20 h-20 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-green-500/10">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h2 class="text-3xl font-bold mb-3 text-white">Connection Setup Successfully!</h2>
+            <p class="text-neutral-300 mb-6 text-lg">Your Telegram account <strong>@{{ profile.telegram_username
+                    }}</strong> is fully linked.</p>
+            <div class="bg-neutral-900/80 rounded-xl p-5 border border-neutral-800 text-left max-w-md mx-auto mb-8">
+                <p class="text-sm text-neutral-400 leading-relaxed">
+                    <strong class="text-white block mb-2">How to apply to jobs:</strong>
+                    1. Take a screenshot of any job posting.<br>
+                    2. Send or forward the image directly to our bot.<br>
+                    3. We will process it and draft the perfect application instantly.
+                </p>
+            </div>
+
+            <a href="https://t.me/{{ bot_username }}" target="_blank"
+                class="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-xl text-black bg-[#00c2ff] hover:bg-white transition-all shadow-[0_0_20px_rgba(0,194,255,0.3)] hover:shadow-[0_0_30px_rgba(0,194,255,0.5)]">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                Open Telegram
+            </a>
+        </div>
+
+        {% elif profile.telegram_username and profile.verification_token %}
+        <!-- STEP 2: VERIFICATION -->
+        <div class="text-center py-6 relative z-10">
+            <div
+                class="w-20 h-20 bg-[#00c2ff]/10 text-[#00c2ff] rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-[#00c2ff]/10">
+                <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+            </div>
+            <h2 class="text-3xl font-bold mb-4 text-white">Authorize Bot</h2>
+
+            <div
+                class="bg-neutral-900/70 rounded-xl p-6 mb-8 border border-neutral-800 text-left max-w-lg mx-auto shadow-inner">
+                <p class="text-neutral-300 text-[15px] mb-4">Your username <strong>@{{ profile.telegram_username
+                        }}</strong> is recorded! We now need to securely link it to our bot.</p>
+                <div class="flex items-start gap-3 p-4 bg-[#00c2ff]/5 border border-[#00c2ff]/20 rounded-lg">
+                    <svg class="w-5 h-5 text-[#00c2ff] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="text-neutral-400 text-sm leading-relaxed">
+                        Click the button below to open Telegram. Hit <strong>"START"</strong> to send the verification
+                        message to our bot. Once we receive your start message, this page will update automatically!
+                    </p>
+                </div>
+            </div>
+
+            <a href="https://t.me/{{ bot_username }}?start={{ profile.verification_token }}" target="_blank"
+                class="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-xl text-black bg-[#00c2ff] hover:bg-white transition-all shadow-[0_0_20px_rgba(0,194,255,0.3)] hover:shadow-[0_0_30px_rgba(0,194,255,0.5)] mb-4">
+                Open Telegram & Send Message
+            </a>
+
+            <p class="text-xs text-neutral-500">
+                Button not working? Open Telegram, search for <strong>@{{ bot_username }}</strong>, and send this exact
+                message:
+                <br><code
+                    class="bg-neutral-900 px-2 py-1 rounded text-[#00c2ff] mt-2 inline-block select-all">/start {{ profile.verification_token }}</code>
+            </p>
+        </div>
+
+        {% else %}
+        <!-- STEP 1: INITIALIZE -->
+        <div class="py-6 max-w-md mx-auto relative z-10">
+            <h2 class="text-2xl font-bold mb-2 text-white">Enter your Username</h2>
+            <p class="text-neutral-400 mb-8 text-sm">Tell us which Telegram account you will be applying from.</p>
+
+            <form method="POST" action="{% url 'telegram_integration' %}" class="space-y-6">
+                {% csrf_token %}
+                <div>
+                    <label for="telegram_username" class="block text-sm font-medium text-neutral-300 mb-2">Telegram
+                        Username</label>
+                    <div class="relative rounded-xl shadow-sm group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <span
+                                class="text-neutral-500 font-medium group-focus-within:text-[#00c2ff] transition-colors">@</span>
+                        </div>
+                        <input type="text" name="telegram_username" id="telegram_username" required
+                            class="focus:ring-2 focus:ring-[#00c2ff]/50 focus:border-[#00c2ff] block w-full pl-9 border-neutral-700 bg-neutral-900/60 rounded-xl p-3.5 text-white placeholder-neutral-600 transition-all"
+                            placeholder="johndoe">
+                    </div>
+                    <p class="mt-3 text-xs text-neutral-500">You can find this in your Telegram Settings > Edit Profile.
+                    </p>
+                </div>
+
+                <button type="submit"
+                    class="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-black bg-[#00c2ff] hover:bg-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-900 focus:ring-offset-[#00c2ff] transition-all">
+                    Save and Continue
+                    <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+
+{% endblock %}
