@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SnapIt</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0A0A0A;
+            --bg-panel: #171717;
+            --bg-hover: #262626;
+            --border-color: #262626;
+            --text-main: #EDEDED;
+            --text-muted: #A3A3A3;
+            --accent: #FFFFFF;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            border-right: 1px solid var(--border-color);
+            background-color: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 0;
+        }
+        .main-content {
+            flex: 1;
+            padding: 2rem 4rem;
+            overflow-y: auto;
+            background-color: var(--bg-dark);
+        }
+        .topbar {
+            display: flex;
+            justify-content: flex-end;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    {% include 'authentication/dashboard_sidebar.html' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="topbar">
+            <span style="font-size: 0.9rem; color: var(--text-muted);">{{ request.user.email }}</span>
+        </div>
+        
+        <div class="content-wrapper" style="max-width: 800px; margin: 0 auto; margin-top: 3rem;">
+            {% if has_resume %}
+                {% include 'authentication/dashboard_status.html' %}
+            {% else %}
+                {% include 'authentication/dashboard_upload.html' %}
+            {% endif %}
+        </div>
+    </main>
+    
+</body>
+</html>

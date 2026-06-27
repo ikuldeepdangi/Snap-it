@@ -29,7 +29,20 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-i9h!$g0ro2v__g&eidv+#bwf)x
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['dosnapit.com', 'www.dosnapit.com']
+base_url_env = os.getenv("BASE_URL", "")
+if base_url_env:
+    host = base_url_env.split(":")[0]
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
+
+if DEBUG:
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '[::1]'])
+
+# Production Security Policies
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 
 # Application definition
@@ -93,6 +106,7 @@ if db_url:
             'PASSWORD': url.password,
             'HOST': url.hostname,
             'PORT': url.port,
+            'CONN_MAX_AGE': 600,
         }
     }
 else:
@@ -139,3 +153,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

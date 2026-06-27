@@ -1,3 +1,26 @@
 from django.db import models
+from django.contrib.auth.models import User
 
-# Create your models here.
+class CreditWallet(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='credit_wallet')
+    balance = models.IntegerField(default=25)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Wallet: {self.balance}"
+
+class TransactionLedger(models.Model):
+    TRANSACTION_TYPES = (
+        ('SIGNUP', 'Signup Bonus'),
+        ('EMAIL_DRAFT', 'Email Drafting'),
+        ('REFILL', 'Manual Refill'),
+    )
+
+    wallet = models.ForeignKey(CreditWallet, on_delete=models.CASCADE, related_name='transactions')
+    amount = models.IntegerField()
+    transaction_type = models.CharField(max_length=50, choices=TRANSACTION_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    description = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.wallet.user.username} - {self.transaction_type}: {self.amount}"

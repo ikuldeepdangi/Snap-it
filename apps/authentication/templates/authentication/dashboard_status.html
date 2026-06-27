@@ -1,0 +1,128 @@
+<h1 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Resume Active</h1>
+<p style="color: var(--text-muted); font-size: 14px; margin-bottom: 32px;">Your resume has been successfully processed and is ready to use.</p>
+
+<div style="background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+        <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="width: 40px; height: 40px; background: rgba(74, 222, 128, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #4ADE80;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 500;">{{ resume.file.name }}</h3>
+                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Uploaded on {{ resume.uploaded_at|date:"M d, Y" }}</div>
+                
+                <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(74, 222, 128, 0.1); color: #4ADE80; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500;">
+                    <div style="width: 6px; height: 6px; background: #4ADE80; border-radius: 50%;"></div>
+                    Text Extracted Successfully
+                </div>
+            </div>
+        </div>
+        
+        <form method="POST" action="{% url 'dashboard' %}" enctype="multipart/form-data" id="replace-form" style="display: inline;">
+            {% csrf_token %}
+            <button type="button" onclick="document.getElementById('replace-file').click()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                Replace Resume
+            </button>
+            <input type="file" name="resume_file" id="replace-file" accept="application/pdf" style="display: none;" onchange="document.getElementById('replace-form').submit();">
+        </form>
+    </div>
+</div>
+
+<h2 style="font-size: 20px; font-weight: 600; margin-top: 32px; margin-bottom: 8px;">Generate Email from Job Screenshot</h2>
+<p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Upload a screenshot of the job posting to generate a custom email.</p>
+
+<div style="background-color: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 24px;">
+    <div style="padding: 24px; text-align: center;" id="job-upload-container">
+        <form id="job-form">
+            <div style="border: 1px dashed var(--border-color); border-radius: 8px; padding: 40px; background-color: var(--bg-panel); cursor: pointer; transition: all 0.2s;" id="job-drop-zone" onclick="document.getElementById('job-file').click()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <div style="font-size: 14px; color: var(--text-main); font-weight: 500; margin-bottom: 4px;">Click to upload job screenshot</div>
+                <div style="font-size: 12px; color: var(--text-muted);">PNG, JPG files only</div>
+                <input type="file" name="screenshot" id="job-file" accept="image/png, image/jpeg" style="display: none;" onchange="submitJob()">
+            </div>
+        </form>
+    </div>
+    
+    <div style="padding: 32px 24px; text-align: center; display: none;" id="job-loading-container">
+        <div style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #60A5FA; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px auto;"></div>
+        <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">Processing Screenshot...</div>
+        <div style="font-size: 14px; color: var(--text-muted);" id="queue-status-text">Submitting to queue...</div>
+    </div>
+</div>
+
+<style>
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+
+<script>
+    const csrfToken = "{{ csrf_token }}";
+    let pollInterval;
+    
+    async function submitJob() {
+        const fileInput = document.getElementById('job-file');
+        if (!fileInput.files.length) return;
+        
+        document.getElementById('job-upload-container').style.display = 'none';
+        document.getElementById('job-loading-container').style.display = 'block';
+        document.getElementById('queue-status-text').innerText = 'Submitting to queue...';
+        
+        const formData = new FormData();
+        formData.append('screenshot', fileInput.files[0]);
+        
+        try {
+            const response = await fetch('/queue/submit/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.job_id) {
+                document.getElementById('queue-status-text').innerText = `In Queue (Position: ${data.queue_position})`;
+                // Start polling
+                pollInterval = setInterval(() => pollStatus(data.job_id), 2000);
+            } else {
+                alert(data.error || 'Failed to submit job.');
+                resetUpload();
+            }
+        } catch (e) {
+            alert('Error submitting job.');
+            resetUpload();
+        }
+    }
+    
+    async function pollStatus(jobId) {
+        try {
+            const response = await fetch(`/queue/status/${jobId}/`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                if (data.status === 'COMPLETED') {
+                    clearInterval(pollInterval);
+                    document.getElementById('queue-status-text').innerText = 'Completed!';
+                    alert('Job completed!');
+                    resetUpload();
+                } else if (data.status === 'FAILED') {
+                    clearInterval(pollInterval);
+                    alert('Job failed processing.');
+                    resetUpload();
+                } else {
+                    document.getElementById('queue-status-text').innerText = `Status: ${data.status} (Position: ${data.queue_position})`;
+                }
+            } else {
+                clearInterval(pollInterval);
+                alert(data.error || 'Error fetching status');
+                resetUpload();
+            }
+        } catch (e) {
+            console.error('Poll error', e);
+        }
+    }
+    
+    function resetUpload() {
+        document.getElementById('job-upload-container').style.display = 'block';
+        document.getElementById('job-loading-container').style.display = 'none';
+        document.getElementById('job-file').value = '';
+    }
+</script>
