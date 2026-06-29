@@ -144,3 +144,32 @@ def logout_view(request):
     from django.contrib.auth import logout
     logout(request)
     return redirect('landing_page')
+
+@login_required
+def config_view(request):
+    """View to edit the custom email prompt."""
+    profile = getattr(request.user, 'profile', None)
+    if not profile:
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        
+    from .models import DEFAULT_EMAIL_PROMPT
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'reset':
+            profile.custom_email_prompt = None
+            profile.save()
+        elif action == 'save':
+            custom_prompt = request.POST.get('custom_prompt')
+            if custom_prompt and custom_prompt.strip():
+                profile.custom_email_prompt = custom_prompt.strip()
+                profile.save()
+        return redirect('config')
+        
+    current_prompt = profile.custom_email_prompt if profile.custom_email_prompt else DEFAULT_EMAIL_PROMPT
+    
+    return render(request, 'core/config.html', {
+        'current_prompt': current_prompt,
+        'is_custom': bool(profile.custom_email_prompt),
+        'default_prompt': DEFAULT_EMAIL_PROMPT
+    })
