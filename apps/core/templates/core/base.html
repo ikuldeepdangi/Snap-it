@@ -31,8 +31,11 @@
 </head>
 
 <body class="h-screen flex overflow-hidden selection:bg-blue-500/30">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+    
     <!-- Sidebar -->
-    <aside class="w-64 border-r border-neutral-800 bg-neutral-900/50 flex flex-col p-6 hidden md:flex">
+    <aside id="sidebar" class="w-64 border-r border-neutral-800 bg-[#0A0A0A] md:bg-neutral-900/50 flex flex-col p-6 fixed md:relative inset-y-0 left-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
         <div class="flex items-center gap-3 mb-10">
             <img src="{% static 'logo.png' %}" alt="SnapIt Logo" class="w-8 h-8 object-contain">
             <span class="font-bold text-lg tracking-tight text-white">Snap<span class="text-[#00c2ff]">It</span></span>
@@ -112,8 +115,13 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col relative h-full overflow-y-auto">
         <header
-            class="h-16 border-b border-neutral-800 bg-neutral-900/30 flex items-center justify-between px-8 sticky top-0 z-10 backdrop-blur-md">
-            <div class="md:hidden font-bold tracking-tight">Snap<span class="text-[#00c2ff]">It</span></div>
+            class="h-16 border-b border-neutral-800 bg-neutral-900/30 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 backdrop-blur-md">
+            <div class="md:hidden flex items-center gap-3 font-bold tracking-tight">
+                <button onclick="toggleSidebar()" class="p-1 -ml-1 text-neutral-400 hover:text-white rounded-md transition-colors focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <span>Snap<span class="text-[#00c2ff]">It</span></span>
+            </div>
             <div class="ml-auto flex items-center gap-6 text-sm text-neutral-400">
                 <a href="{% url 'billing_page' %}"
                     class="flex items-center gap-2.5 bg-neutral-800/40 hover:bg-neutral-800 px-3 py-1.5 rounded-md border border-neutral-700/50 hover:border-neutral-600 transition-all cursor-pointer"
@@ -134,6 +142,15 @@
             <p>© 2026 SnapIt Inc. All rights reserved. <span class="ml-2 opacity-70">v3.0.1</span></p>
         </footer>
     </main>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+    </script>
 </body>
 
 </html>
