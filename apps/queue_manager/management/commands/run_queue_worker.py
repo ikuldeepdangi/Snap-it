@@ -88,34 +88,36 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.WARNING(f"No HR email found, drafting to user {job.user.email} instead."))
                 
                 resume_file_path = job.user.resume.file.path
-                self.stdout.write(self.style.SUCCESS(f"[Step 4] Dispatching email to {result['hr_email']} via Gmail API..."))
+                
+                # 4. Deduct credit safely before hitting Gmail API
+                if not deduct_credit_atomically(job.user.id, amount=1, description=f'Processed queue job {job.id}'):
+                    raise ValueError("Insufficient credit balance during final processing step. Job aborted to prevent unpaid usage.")
+                    
+                self.stdout.write(self.style.SUCCESS(f"[Step 4] Credit reserved. Dispatching email to {result['hr_email']} via Gmail..."))
                 if not send_user_email(profile, result, resume_file_path):
+                    # Optional: Add refund logic here if Gmail explicitly returns False, but exception is raised below anyway
                     raise ValueError("Failed to dispatch email via Gmail API.")
                 self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent."))
                 
-                # 4. Deduct credit
-                if deduct_credit_atomically(job.user.id, amount=1, description=f'Processed queue job {job.id}'):
-                    job.status = 'COMPLETED'
-                    job.save()
-                    self.stdout.write(self.style.SUCCESS(f"[Step 6] Credit deducted. Job {job.id} COMPLETED successfully."))
+                job.status = 'COMPLETED'
+                job.save()
+                self.stdout.write(self.style.SUCCESS(f"[Step 6] Job {job.id} COMPLETED successfully."))
+                
+                from apps.core.engine import send_async_telegram_alert
+                if hasattr(job.user, 'telegram_profile') and job.user.telegram_profile.is_verified:
+                    # Refresh wallet from DB to get the new balance
+                    job.user.credit_wallet.refresh_from_db()
+                    rem_balance = job.user.credit_wallet.balance
                     
-                    from apps.core.engine import send_async_telegram_alert
-                    if hasattr(job.user, 'telegram_profile') and job.user.telegram_profile.is_verified:
-                        # Refresh wallet from DB to get the new balance
-                        job.user.credit_wallet.refresh_from_db()
-                        rem_balance = job.user.credit_wallet.balance
-                        
-                        tg_id = job.user.telegram_profile.telegram_chat_id
-                        notification_text = (
-                            f"⚡ Job Application Dispatched Successfully!\n"
-                            f"🏢 Company: {result.get('company')}\n"
-                            f"🎯 Position: {result.get('role')}\n"
-                            f"📬 Destination HR Address: {result.get('hr_email')}\n\n"
-                            f"💸 Deducted 1 Credit. Remaining Balance: {rem_balance} credits."
-                        )
-                        send_async_telegram_alert(tg_id, notification_text)
-                else:
-                    raise ValueError("Insufficient credit balance during final processing step.")
+                    tg_id = job.user.telegram_profile.telegram_chat_id
+                    notification_text = (
+                        f"⚡ Job Application Dispatched Successfully!\n"
+                        f"🏢 Company: {result.get('company')}\n"
+                        f"🎯 Position: {result.get('role')}\n"
+                        f"📬 Destination HR Address: {result.get('hr_email')}\n\n"
+                        f"💸 Deducted 1 Credit. Remaining Balance: {rem_balance} credits."
+                    )
+                    send_async_telegram_alert(tg_id, notification_text)
                     
             except Exception as e:
                 # 5. Handle Failure
