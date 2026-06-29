@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold">Email Prompt Configuration</h2>
+        {% if is_custom %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm font-medium border border-blue-500/20">
+            <span class="w-2 h-2 rounded-full bg-blue-400"></span> Custom Prompt Active
+        </span>
+        {% else %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-500/10 text-neutral-400 text-sm font-medium border border-neutral-700">
+            <span class="w-2 h-2 rounded-full bg-neutral-400"></span> Default Prompt Active
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="glass-card rounded-2xl p-6 ambient-glow">
+        <p class="text-neutral-400 text-sm mb-6">
+            Customize the system prompt used by Gemini Vision to generate your cold emails.
+            <strong>{resume_content}</strong> will be dynamically replaced with your uploaded resume text.
+            Make sure to instruct the model to return valid JSON with keys: <code>company, role, hr_email, email_subject, email_body</code>.
+        </p>
+
+        <form method="POST" action="{% url 'config' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label for="custom_prompt" class="block text-sm font-medium text-neutral-300 mb-2">Prompt Template</label>
+                <textarea id="custom_prompt" name="custom_prompt" rows="22" 
+                          class="w-full bg-neutral-900/50 border border-neutral-700 rounded-xl p-4 text-sm text-neutral-300 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                          required>{{ current_prompt }}</textarea>
+            </div>
+
+            <div class="flex items-center justify-between pt-4">
+                <button type="submit" name="action" value="reset" 
+                        class="px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20"
+                        onclick="return confirm('Are you sure you want to reset to the default prompt? Your custom prompt will be lost.');">
+                    Reset to Default
+                </button>
+                <button type="submit" name="action" value="save"
+                        class="px-6 py-2 text-sm font-medium text-white bg-[#00c2ff] hover:bg-[#00a8e0] rounded-lg transition-colors shadow-lg shadow-[#00c2ff]/20">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

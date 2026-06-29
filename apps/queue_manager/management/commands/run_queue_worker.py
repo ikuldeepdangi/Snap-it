@@ -47,7 +47,11 @@ class Command(BaseCommand):
                 
                 # Use Gemini
                 self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing AI Image OCR using Gemini..."))
-                result = analyze_screenshot_with_gemini(screenshot_path, resume_text)
+                
+                profile = getattr(job.user, 'profile', None)
+                prompt_template = profile.get_email_prompt() if profile else None
+                
+                result = analyze_screenshot_with_gemini(screenshot_path, resume_text, prompt_template=prompt_template)
                 
                 if "error" in result:
                     raise ValueError(f"Gemini AI Error: {result['error']}")
@@ -56,7 +60,6 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f"[Step 3] AI processing complete. Generated draft to: {result.get('company')} - {result.get('role')}"))
                 
                 # 3. Dispatch Email via Gmail API
-                profile = getattr(job.user, 'profile', None)
                 if not profile:
                     raise ValueError("User has no linked Google profile.")
                     
