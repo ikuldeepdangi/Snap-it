@@ -1,3 +1,7 @@
 from django.shortcuts import render
 
-# Create your views here.
+def privacy_view(request):
+    return render(request, 'core/privacy.html')
+
+def terms_view(request):
+    return render(request, 'core/terms.html')
