@@ -36,3 +36,5 @@ test_*.jpg
 media/screenshots/
 media/resumes/
 media/
+
+/temp
