@@ -24,22 +24,28 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-i9h!$g0ro2v__g&eidv+#bwf)xyar%f!py=wqgx5z_4yz8@jd!")
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 BASE_URL = os.getenv("BASE_URL", "")
-ALLOWED_HOSTS = ['dosnapit.com', 'www.dosnapit.com',BASE_URL]
-
+ALLOWED_HOSTS = ['dosnapit.com', 'www.dosnapit.com']
+CSRF_TRUSTED_ORIGINS = ['https://dosnapit.com', 'https://www.dosnapit.com']
 
 if BASE_URL:
-    host = BASE_URL.split(":")[0]
-    if host not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(host)
+    if BASE_URL.startswith("http://") or BASE_URL.startswith("https://"):
+        CSRF_TRUSTED_ORIGINS.append(BASE_URL)
+        import urllib.parse
+        host = urllib.parse.urlparse(BASE_URL).hostname
+        if host:
+            ALLOWED_HOSTS.append(host)
+    else:
+        CSRF_TRUSTED_ORIGINS.append(f"https://{BASE_URL}")
+        ALLOWED_HOSTS.append(BASE_URL.split(":")[0])
 
 if DEBUG:
-    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '[::1]', '*'])
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '[::1]'])
 
 # Production Security Policies
 SECURE_SSL_REDIRECT = not DEBUG

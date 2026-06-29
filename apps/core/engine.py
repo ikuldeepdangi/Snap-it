@@ -47,7 +47,7 @@ def get_genai_client():
         raise RuntimeError("Missing GEMINI_API_KEY in .env")
     return genai.Client(api_key=api_key)
 
-def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, model: str = "gemini-3.1-flash-lite") -> Dict[str, Any]:
+def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, model: str = "gemini-3.1-flash-lite", prompt_template: str = None) -> Dict[str, Any]:
     """
     Uses Gemini's Vision capabilities to extract structured parameters from job screenshots
     and generate a personalized email.
@@ -58,26 +58,13 @@ def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, mo
     path = Path(screenshot_path)
     pil_image = Image.open(path)
     
-    prompt = f"""
-    You are an elite hiring strategist. Look at the ATTACHED IMAGE (a job posting) and use the CANDIDATE RESUME below.
-
-    CANDIDATE RESUME:
-    {resume_content if resume_content else "No resume provided"}
-
-    TASK:
-    1. Extract: Company name, Job Role, and HR Email from the image.
-    2. Write a HIGH-CONVERSION application email (220-320 words) based on the matched resume context.
-    3. Generate a professional and catchy subject line tailored to the job description.
-
-    RETURN ONLY VALID JSON:
-    {{
-      "company": "",
-      "role": "",
-      "hr_email": "",
-      "email_subject": "",
-      "email_body": ""
-    }}
-    """
+    if prompt_template is None:
+        from apps.authentication.models import DEFAULT_EMAIL_PROMPT
+        prompt_template = DEFAULT_EMAIL_PROMPT
+        
+    prompt = prompt_template.format(
+        resume_content=resume_content if resume_content else "No resume provided"
+    )
     
     response = client.models.generate_content(
         model=model,
@@ -86,8 +73,7 @@ def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, mo
     )
     
     try:
-        clean_json = re.search(r"\{.*\}", response.text, re.DOTALL).group()
-        return json.loads(clean_json)
+        return json.loads(response.text)
     except Exception as e:
         print(f"Error parsing Gemini response: {e}")
         return {"error": "AI could not read image clearly", "raw": response.text}
