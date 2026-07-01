@@ -15,7 +15,7 @@ class Command(BaseCommand):
             return
 
         base_url = options['url'].rstrip('/')
-        webhook_url = f"{base_url}/bot/webhook/"
+        webhook_url = f"{base_url}/telegram-integration/webhook/"
 
         self.stdout.write(f"Setting webhook to: {webhook_url}")
 
