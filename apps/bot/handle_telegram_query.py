@@ -233,8 +233,10 @@ def process_single_media(chat_id, file_bytes, file_name, is_pdf):
     if wallet.balance < 1:
         return f"insufficient_{wallet.balance}"
         
-    job = ProcessingJob.objects.create(user=user, status='PENDING')
+    job = ProcessingJob.objects.create(user=user, status='PROCESSING')
     job.screenshot.save(file_name, ContentFile(file_bytes))
+    job.status = 'PENDING'
+    job.save()
     return f"job_created_{job.id}"
 
 def process_album_batch(chat_id, file_ids):
@@ -261,8 +263,10 @@ def process_album_batch(chat_id, file_ids):
         file_path = r1['result']['file_path']
         r2 = requests.get(f"https://api.telegram.org/file/bot{token}/{file_path}")
         
-        job = ProcessingJob.objects.create(user=user, status='PENDING')
+        job = ProcessingJob.objects.create(user=user, status='PROCESSING')
         job.screenshot.save(f"tg_job_bulk_{job.id}.jpg", ContentFile(r2.content))
+        job.status = 'PENDING'
+        job.save()
         queued_ids.append(str(job.id))
         
     return ", ".join(queued_ids)

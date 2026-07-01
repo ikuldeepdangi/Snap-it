@@ -49,6 +49,8 @@ if DEBUG:
 
 # Production Security Policies
 SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
@@ -71,6 +73,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -104,6 +107,9 @@ WSGI_APPLICATION = 'snapit.wsgi.application'
 
 import urllib.parse
 
+# Look for a production storage path mount first
+PRODUCTION_STORAGE = "/app/storage"
+
 db_url = os.getenv("DATABASE_URL")
 if db_url:
     url = urllib.parse.urlparse(db_url)
@@ -118,7 +124,15 @@ if db_url:
             'CONN_MAX_AGE': 600,
         }
     }
+elif os.path.exists(PRODUCTION_STORAGE):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(PRODUCTION_STORAGE, 'snap-it-db.sqlite3'),
+        }
+    }
 else:
+    # Your fallback local settings loop
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -166,4 +180,9 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
+if os.path.exists(PRODUCTION_STORAGE):
+    # Direct media uploads (Resumes and Screenshots) to stay safe in the volume too
+    MEDIA_ROOT = os.path.join(PRODUCTION_STORAGE, 'media')
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'

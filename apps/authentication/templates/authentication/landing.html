@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="fFWsEm-pf7NXPeDgn25w6xLxRQ4RIFIV4iI_3CxB0bE" />
     <meta name="description"
         content="SnapIt - Transform job postings into direct email conversations instantly using multimodal AI.">
     <title>SnapIt - Transform Job Postings into Direct Conversations</title>
@@ -772,13 +773,14 @@
                 </div>
                 <div class="footer-col">
                     <h4>Legal</h4>
-                    <a href="#" class="footer-link">Privacy Parameters</a>
-                    <a href="#" class="footer-link">Terms of Operation</a>
+                    <a href="{% url 'privacy' %}" class="footer-link">Privacy Parameters</a>
+                    <a href="{% url 'terms' %}" class="footer-link">Terms of Operation</a>
                 </div>
             </div>
             <div
-                style="text-align: center; padding-top: 32px; border-top: 1px solid var(--border-color); font-size: 0.75rem;">
-                <p>© 2026 SnapIt Inc. All rights reserved.</p>
+                style="text-align: center; padding-top: 32px; border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-muted);">
+                <p>© 2026 SnapIt Inc. All rights reserved. <span style="margin-left: 8px; opacity: 0.7;">v3.0.2</span>
+                </p>
             </div>
         </div>
     </footer>

@@ -36,3 +36,9 @@ test_*.jpg
 media/screenshots/
 media/resumes/
 media/
+
+/temp
+
+# AI Agent files
+.agents/
+skills-lock.json
