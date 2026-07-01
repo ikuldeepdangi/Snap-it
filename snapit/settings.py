@@ -159,6 +159,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'landing_page'
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -186,3 +189,6 @@ if os.path.exists(PRODUCTION_STORAGE):
     MEDIA_ROOT = os.path.join(PRODUCTION_STORAGE, 'media')
 else:
     MEDIA_ROOT = BASE_DIR / 'media'
+
+
+DEBUG=False
