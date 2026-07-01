@@ -1,0 +1,248 @@
+<script>
+    const csrfToken = "{{ csrf_token }}";
+    let pollInterval;
+    let currentJobIds = [];
+    let activeJobIndex = 0;
+    
+    // UI Elements
+    const uploadView = document.getElementById('upload-view');
+    const processingView = document.getElementById('processing-view');
+    const logPos = document.getElementById('log-pos');
+    const progressCircle = document.getElementById('progress-circle');
+    const progressText = document.getElementById('progress-text');
+    const currentActionText = document.getElementById('current-action-text');
+    const etaText = document.getElementById('eta-text');
+    const processingTitle = document.getElementById('processing-title');
+    
+    // Time tracking
+    let startTime;
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        
+        const bgColor = type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20';
+        const textColor = type === 'success' ? 'text-emerald-400' : 'text-red-400';
+        const icon = type === 'success' 
+            ? `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+            : `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+
+        toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-lg transform transition-all duration-300 translate-y-10 opacity-0 ${bgColor} ${textColor} mb-2`;
+        toast.innerHTML = `
+            <div class="shrink-0">${icon}</div>
+            <div class="text-sm font-medium flex-1">${message}</div>
+            <button onclick="this.parentElement.remove()" class="shrink-0 opacity-50 hover:opacity-100 transition-opacity">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        `;
+        container.appendChild(toast);
+        
+        requestAnimationFrame(() => {
+            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+        });
+        
+        setTimeout(() => {
+            toast.classList.add('translate-y-10', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    function addLog(msg, colorClass = "text-neutral-400") {
+        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+        const entry = document.createElement('div');
+        entry.className = `flex gap-3 ${colorClass}`;
+        entry.innerHTML = `<span class="text-neutral-600 select-none">${time}</span> <span>${msg}</span>`;
+        if(logPos) {
+            logPos.appendChild(entry);
+            logPos.scrollTop = logPos.scrollHeight;
+        }
+    }
+
+    function updateProgress(percent, text) {
+        if(progressText) progressText.innerText = `${percent}%`;
+        // Circumference of r=45 is 2*PI*45 = 282.74
+        if(progressCircle) {
+            const offset = 283 - (283 * percent / 100);
+            progressCircle.style.strokeDashoffset = offset;
+        }
+        if(currentActionText) currentActionText.innerText = text;
+        
+        // Estimate time (rough logic)
+        if (startTime && percent > 0 && etaText) {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const total = elapsed / (percent / 100);
+            const remaining = Math.max(1, Math.round(total - elapsed));
+            etaText.innerText = remaining;
+        }
+    }
+    
+    function updateStepper(stepId, state, desc) {
+        const li = document.getElementById(stepId);
+        if (!li) return;
+        const iconDiv = li.querySelector('div:first-child');
+        const descEl = li.querySelector('p');
+        
+        if (state === 'active') {
+            li.classList.remove('opacity-40', 'opacity-50');
+            iconDiv.className = "w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(99,102,241,0.4)] transition-all";
+            iconDiv.innerHTML = '<div class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>';
+            descEl.className = "text-xs text-indigo-300 mt-1";
+            descEl.innerText = desc;
+        } else if (state === 'completed') {
+            li.classList.remove('opacity-40', 'opacity-50');
+            iconDiv.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(16,185,129,0.3)] transition-all";
+            iconDiv.innerHTML = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            descEl.className = "text-xs text-emerald-400/80 mt-1";
+            descEl.innerText = desc;
+        }
+    }
+
+    async function submitJob() {
+        const fileInput = document.getElementById('job-file');
+        if (!fileInput || !fileInput.files.length) return;
+        
+        if(uploadView && processingView) {
+            uploadView.classList.add('hidden');
+            processingView.classList.remove('hidden');
+        }
+        if(processingTitle) {
+            processingTitle.innerText = `Processing ${fileInput.files.length} Job Screenshot${fileInput.files.length > 1 ? 's' : ''}`;
+        }
+        
+        if(logPos) logPos.innerHTML = '';
+        addLog(`Upload complete: ${fileInput.files.length} files`, "text-emerald-400");
+        updateStepper('step-upload', 'active', 'Uploading...');
+        
+        const formData = new FormData();
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('screenshot', fileInput.files[i]);
+        }
+        
+        try {
+            const response = await fetch('/queue/submit/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+            const data = await response.json();
+            
+            if (response.ok && data.job_ids) {
+                currentJobIds = data.job_ids;
+                activeJobIndex = 0;
+                
+                updateStepper('step-upload', 'completed', `${fileInput.files.length} files uploaded`);
+                updateStepper('step-ocr', 'active', 'In progress...');
+                startTime = Date.now();
+                updateProgress(5, "Submitting to queue...");
+                addLog(`Added to queue. Starting job 1 of ${currentJobIds.length}`);
+                
+                pollInterval = setInterval(() => pollStatus(currentJobIds[activeJobIndex]), 2000);
+            } else {
+                showToast(data.error || 'Failed to submit job.', 'error');
+                resetUpload();
+            }
+        } catch (e) {
+            showToast('Error submitting job.', 'error');
+            resetUpload();
+        }
+    }
+    
+    let currentJobStatusText = "";
+    
+    async function pollStatus(jobId) {
+        try {
+            const response = await fetch(`/queue/status/${jobId}/`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                const baseProgress = (activeJobIndex / currentJobIds.length) * 100;
+                const perJobProgress = 100 / currentJobIds.length;
+                
+                if (data.status === 'COMPLETED') {
+                    clearInterval(pollInterval);
+                    addLog(`Job ${activeJobIndex + 1} completed! Draft sent.`, "text-emerald-400");
+                    updateProgress(Math.round(baseProgress + perJobProgress), "Generating outreach emails...");
+                    
+                    activeJobIndex++;
+                    if (activeJobIndex < currentJobIds.length) {
+                        addLog(`Starting job ${activeJobIndex + 1}...`);
+                        pollInterval = setInterval(() => pollStatus(currentJobIds[activeJobIndex]), 2000);
+                    } else {
+                        updateStepper('step-ocr', 'completed', `${currentJobIds.length}/${currentJobIds.length} completed`);
+                        updateStepper('step-analyze', 'completed', 'Company, Role, Requirements');
+                        updateStepper('step-match', 'completed', 'Skills & Experience matched');
+                        updateStepper('step-generate', 'completed', 'In progress...');
+                        updateStepper('step-finalize', 'completed', 'Completed');
+                        
+                        updateProgress(100, "All jobs finished!");
+                        if(etaText) etaText.innerText = "0";
+                        showToast("All jobs processed successfully!");
+                        setTimeout(() => {
+                            window.location.href = "{% url 'history' %}";
+                        }, 1500);
+                    }
+                } else if (data.status === 'FAILED') {
+                    clearInterval(pollInterval);
+                    addLog(`Job ${activeJobIndex + 1} failed.`, "text-red-400");
+                    showToast(`Job ${activeJobIndex + 1} failed.`, 'error');
+                    
+                    activeJobIndex++;
+                    if (activeJobIndex < currentJobIds.length) {
+                        addLog(`Starting job ${activeJobIndex + 1}...`);
+                        pollInterval = setInterval(() => pollStatus(currentJobIds[activeJobIndex]), 2000);
+                    } else {
+                        updateProgress(100, "Finished (some errors)");
+                        setTimeout(resetUpload, 2000);
+                    }
+                } else {
+                    if (data.status === 'PROCESSING') {
+                        if (currentJobStatusText !== `Job ${activeJobIndex + 1} processing`) {
+                            addLog(`Analyzing job ${activeJobIndex + 1} with Gemini OCR...`, "text-indigo-400");
+                            currentJobStatusText = `Job ${activeJobIndex + 1} processing`;
+                        }
+                        const jobPercent = baseProgress + (perJobProgress * 0.5);
+                        updateProgress(Math.round(jobPercent), `Analyzing Job ${activeJobIndex + 1}...`);
+                        updateStepper('step-analyze', 'active', 'Reading text...');
+                    } else if (data.status === 'PENDING') {
+                        updateProgress(Math.round(baseProgress + (perJobProgress * 0.1)), `Queue position: ${data.queue_position}`);
+                    }
+                }
+            } else {
+                clearInterval(pollInterval);
+                resetUpload();
+            }
+        } catch (e) {
+            console.error('Poll error', e);
+        }
+    }
+    
+    function resetUpload() {
+        if(uploadView && processingView) {
+            uploadView.classList.remove('hidden');
+            processingView.classList.add('hidden');
+        }
+        const fileInput = document.getElementById('job-file');
+        if (fileInput) fileInput.value = '';
+    }
+    
+    // Drag and Drop support
+    const dropZone = document.getElementById('job-drop-zone');
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-indigo-400/80', 'bg-indigo-500/10');
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-indigo-400/80', 'bg-indigo-500/10');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-indigo-400/80', 'bg-indigo-500/10');
+            if (e.dataTransfer.files.length > 0) {
+                document.getElementById('job-file').files = e.dataTransfer.files;
+                submitJob();
+            }
+        });
+    }
+</script>

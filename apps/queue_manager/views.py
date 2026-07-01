@@ -19,7 +19,7 @@ def submit_job_view(request):
         if wallet.balance < len(screenshot_files):
             return JsonResponse({'error': f'Insufficient credits. You need {len(screenshot_files)} credits.'}, status=402)
         
-        first_job = None
+        job_ids = []
         for f in screenshot_files:
             job = ProcessingJob(
                 user=request.user,
@@ -27,14 +27,16 @@ def submit_job_view(request):
                 status='PENDING'
             )
             job.save()
-            if not first_job:
-                first_job = job
+            job_ids.append(job.id)
+            
+        first_job = ProcessingJob.objects.get(id=job_ids[0])
         
         # Calculate queue position
         position = ProcessingJob.objects.filter(status='PENDING', created_at__lt=first_job.created_at).count() + 1
         
         return JsonResponse({
-            'job_id': first_job.id,
+            'job_ids': job_ids,
+            'job_id': first_job.id, # Keep for backward compatibility if needed, but we will use job_ids on frontend
             'queue_position': position,
             'status': first_job.status,
             'total_submitted': len(screenshot_files)

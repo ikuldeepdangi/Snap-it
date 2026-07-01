@@ -1,0 +1,94 @@
+<div class="w-full">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-white tracking-tight" id="processing-title">Processing Job Screenshots</h2>
+        <span class="text-xs font-medium text-neutral-500 bg-neutral-900 px-3 py-1.5 rounded-full border border-neutral-800">Step 3 of 4</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Left Column: Stepper -->
+        <div class="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-8 relative">
+            <div class="absolute left-[2.25rem] top-12 bottom-12 w-px bg-neutral-800/80 z-0"></div>
+            
+            <ul class="space-y-8 relative z-10" id="stepper-list">
+                <!-- Steps will be updated by JS -->
+                <li class="flex gap-4 items-start step-item" id="step-upload">
+                    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Uploading Files</h4>
+                        <p class="text-xs text-neutral-400 mt-1" id="step-upload-desc">Files uploaded successfully</p>
+                    </div>
+                </li>
+                <li class="flex gap-4 items-start step-item opacity-50" id="step-ocr">
+                    <div class="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(99,102,241,0.4)]">
+                        <div class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Extracting Text (OCR)</h4>
+                        <p class="text-xs text-indigo-300 mt-1" id="step-ocr-desc">In progress...</p>
+                    </div>
+                </li>
+                <li class="flex gap-4 items-start step-item opacity-40" id="step-analyze">
+                    <div class="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0 mt-0.5 transition-colors"></div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Analyzing Job Details</h4>
+                        <p class="text-xs text-neutral-500 mt-1">Pending</p>
+                    </div>
+                </li>
+                <li class="flex gap-4 items-start step-item opacity-40" id="step-match">
+                    <div class="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0 mt-0.5 transition-colors"></div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Matching With Resume</h4>
+                        <p class="text-xs text-neutral-500 mt-1">Pending</p>
+                    </div>
+                </li>
+                <li class="flex gap-4 items-start step-item opacity-40" id="step-generate">
+                    <div class="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0 mt-0.5 transition-colors"></div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Generating Outreach Emails</h4>
+                        <p class="text-xs text-neutral-500 mt-1">Pending</p>
+                    </div>
+                </li>
+                <li class="flex gap-4 items-start step-item opacity-40" id="step-finalize">
+                    <div class="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0 mt-0.5 transition-colors"></div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-white">Finalizing Results</h4>
+                        <p class="text-xs text-neutral-500 mt-1">Pending</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Right Column: Progress Circle & Logs -->
+        <div class="flex flex-col gap-4">
+            <div class="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-8 flex flex-col items-center justify-center flex-1 min-h-[300px]">
+                <div class="relative w-40 h-40 flex items-center justify-center mb-8">
+                    <svg class="w-full h-full -rotate-90 transform absolute" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="6" class="text-neutral-800"></circle>
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="6" class="text-indigo-500 transition-all duration-500 ease-out" stroke-dasharray="283" stroke-dashoffset="283" id="progress-circle"></circle>
+                    </svg>
+                    <span class="text-4xl font-bold text-white tracking-tighter" id="progress-text">0%</span>
+                </div>
+                <h3 class="text-lg font-medium text-white mb-2" id="current-action-text">Initializing...</h3>
+                <p class="text-sm text-neutral-500">Estimated time remaining <br><span class="text-neutral-300 block text-center mt-1">~<span id="eta-text">--</span> seconds</span></p>
+            </div>
+
+            <!-- Expandable Logs -->
+            <details class="group bg-[#0A0A0A] border border-neutral-800 rounded-2xl overflow-hidden" open>
+                <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-neutral-900/50 transition-colors">
+                    <span class="text-sm font-medium text-neutral-300 flex items-center gap-2">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                        View Logs
+                    </span>
+                    <svg class="w-4 h-4 text-neutral-500 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </summary>
+                <div class="p-4 pt-0 border-t border-neutral-800/50 mt-1">
+                    <div class="font-mono text-[11px] leading-loose h-32 overflow-y-auto w-full pr-2" id="log-pos">
+                        <!-- Logs injected by JS -->
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
