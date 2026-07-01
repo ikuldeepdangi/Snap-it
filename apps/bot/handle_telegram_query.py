@@ -118,64 +118,40 @@ async def telegram_webhook(request):
                         await bot.send_message(chat_id=chat_id, text="🤖 Unsupported format. Please submit a valid image screenshot.")
                         return HttpResponse("OK")
                         
-                    # Handle Albums (Debouncing via Cache)
+                    # Handle Albums (Debouncing notifications via Cache)
                     media_group_id = update.message.media_group_id
-                    if media_group_id:
-                        from django.core.cache import cache
-                        import asyncio
-                        
-                        cache_key = f"tg_album_{media_group_id}"
-                        cached_data = cache.get(cache_key)
-                        
-                        if cached_data is None:
-                            # First image in album, create cache and wait
-                            cache.set(cache_key, [tg_file_id], timeout=30)
-                            await asyncio.sleep(1.5) # Wait for other webhooks to append
-                            
-                            # Fetch all collected images
-                            final_file_ids = cache.get(cache_key)
-                            
-                            # Check wallet balance and process
-                            res = await sync_to_async(process_album_batch)(chat_id, final_file_ids)
-                            if res.startswith("insufficient_"):
-                                bal = res.split("_")[1]
+                    from django.core.cache import cache
+                    
+                    # Process file immediately for robustness (no holding in memory)
+                    tg_file = await bot.get_file(tg_file_id)
+                    file_bytes = await tg_file.download_as_bytearray()
+                    
+                    res = await sync_to_async(process_single_media)(chat_id, file_bytes, file_name, is_pdf)
+                    
+                    if res == "resume_saved":
+                        await bot.send_message(chat_id=chat_id, text="📄 Resume saved and processed successfully! You can now send job screenshots.")
+                    elif res == "resume_missing":
+                        await bot.send_message(chat_id=chat_id, text="⚠️ Resume missing! Please upload your Resume PDF directly to this chat thread to proceed.")
+                    elif res.startswith("insufficient_"):
+                        bal = res.split("_")[1]
+                        if media_group_id:
+                            if not cache.get(f"tg_insuf_{media_group_id}"):
+                                cache.set(f"tg_insuf_{media_group_id}", True, timeout=60)
+                                await bot.send_message(chat_id=chat_id, text=f"❌ Insufficient points! This requires 1 credit, but you have {bal}.")
+                        else:
+                            await bot.send_message(chat_id=chat_id, text=f"❌ Insufficient points! This requires 1 credit, but you have {bal}.")
+                    elif res == "unsupported":
+                        await bot.send_message(chat_id=chat_id, text="🤖 Unsupported format. Please submit a valid image screenshot.")
+                    elif res.startswith("job_created_"):
+                        job_id = res.split("_")[2]
+                        if media_group_id:
+                            if not cache.get(f"tg_notified_{media_group_id}"):
+                                cache.set(f"tg_notified_{media_group_id}", True, timeout=60)
                                 await bot.send_message(
                                     chat_id=chat_id, 
-                                    text=f"❌ Batch Ingestion Blocked! You submitted {len(final_file_ids)} screenshots, but your "
-                                         f"wallet currently only holds {bal} credits.\n\nPlease recharge or upload fewer images."
-                                )
-                            elif res == "resume_missing":
-                                await bot.send_message(chat_id=chat_id, text="⚠️ Resume missing! Please upload your Resume PDF directly to this chat thread to proceed.")
-                            else:
-                                await bot.send_message(
-                                    chat_id=chat_id, 
-                                    text=f"⚡ We've already started the process due to demand of service! You requested {len(final_file_ids)} jobs. "
-                                         f"Processing chronologically...\nQueue IDs: {res}"
+                                    text=f"⚡ Batch Ingested! Job reference ID #{job_id} appended to queue pipeline.\nWe are processing your album chronologically..."
                                 )
                         else:
-                            # Not the first image, just append to cache and return immediately
-                            cached_data.append(tg_file_id)
-                            cache.set(cache_key, cached_data, timeout=30)
-                            return HttpResponse("OK")
-                            
-                    else:
-                        # Single file processing
-                        tg_file = await bot.get_file(tg_file_id)
-                        file_bytes = await tg_file.download_as_bytearray()
-                        
-                        res = await sync_to_async(process_single_media)(chat_id, file_bytes, file_name, is_pdf)
-                        
-                        if res == "resume_saved":
-                            await bot.send_message(chat_id=chat_id, text="📄 Resume saved and processed successfully! You can now send job screenshots.")
-                        elif res == "resume_missing":
-                            await bot.send_message(chat_id=chat_id, text="⚠️ Resume missing! Please upload your Resume PDF directly to this chat thread to proceed.")
-                        elif res.startswith("insufficient_"):
-                            bal = res.split("_")[1]
-                            await bot.send_message(chat_id=chat_id, text=f"❌ Insufficient points! This requires 1 credit, but you have {bal}.")
-                        elif res == "unsupported":
-                            await bot.send_message(chat_id=chat_id, text="🤖 Unsupported format. Please submit a valid image screenshot.")
-                        elif res.startswith("job_created_"):
-                            job_id = res.split("_")[2]
                             await bot.send_message(chat_id=chat_id, text=f"⚡ Ingested! Job reference ID #{job_id} appended to queue pipeline.")
                         
         except Exception as e:
