@@ -11,5 +11,5 @@ def create_user_wallet(sender, instance, created, **kwargs):
             wallet=wallet,
             amount=25,
             transaction_type='SIGNUP',
-            description='Initial signup bonus credits'
+            description='🎉 Welcome Bonus'
         )
