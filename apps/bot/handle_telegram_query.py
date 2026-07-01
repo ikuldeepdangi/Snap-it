@@ -8,6 +8,7 @@ from asgiref.sync import sync_to_async
 
 @sync_to_async
 def link_account(token, chat_id, username):
+    from django.db import IntegrityError
     try:
         profile = TelegramProfile.objects.get(verification_token=token)
         profile.telegram_chat_id = chat_id
@@ -15,9 +16,11 @@ def link_account(token, chat_id, username):
         profile.is_verified = True
         profile.verification_token = None
         profile.save()
-        return profile
+        return profile, None
     except TelegramProfile.DoesNotExist:
-        return None
+        return None, "invalid"
+    except IntegrityError:
+        return None, "duplicate"
 
 @sync_to_async
 def get_or_verify_user(chat_id, username):
@@ -62,7 +65,7 @@ async def telegram_webhook(request):
                     parts = text.split()
                     if len(parts) > 1:
                         token = parts[1]
-                        profile = await link_account(token, chat_id, update.effective_user.username)
+                        profile, err = await link_account(token, chat_id, update.effective_user.username)
                         
                         if profile:
                             display_name = update.effective_user.username or update.effective_user.first_name or "there"
@@ -72,6 +75,11 @@ async def telegram_webhook(request):
                                 f"You can now manage your applications and apply to jobs directly through our bot."
                             )
                             await bot.send_message(chat_id=chat_id, text=greeting)
+                        elif err == "duplicate":
+                            await bot.send_message(
+                                chat_id=chat_id, 
+                                text="❌ Verification Failed: This Telegram account is already linked to another SnapIt web account! You can only link one web account per Telegram profile."
+                            )
                         else:
                             await bot.send_message(chat_id=chat_id, text="❌ Verification Link is invalid or expired.")
                     else:
