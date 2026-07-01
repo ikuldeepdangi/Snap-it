@@ -38,3 +38,7 @@ media/resumes/
 media/
 
 /temp
+
+# AI Agent files
+.agents/
+skills-lock.json

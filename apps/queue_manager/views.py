@@ -12,26 +12,34 @@ def submit_job_view(request):
         except CreditWallet.DoesNotExist:
             wallet = CreditWallet.objects.create(user=request.user, balance=25)
             
-        if wallet.balance < 1:
-            return JsonResponse({'error': 'Insufficient credits.'}, status=402)
-        
-        screenshot_file = request.FILES.get('screenshot')
-        if not screenshot_file:
+        screenshot_files = request.FILES.getlist('screenshot')
+        if not screenshot_files:
             return JsonResponse({'error': 'No screenshot provided.'}, status=400)
+            
+        if wallet.balance < len(screenshot_files):
+            return JsonResponse({'error': f'Insufficient credits. You need {len(screenshot_files)} credits.'}, status=402)
         
-        job = ProcessingJob.objects.create(
-            user=request.user,
-            screenshot=screenshot_file,
-            status='PENDING'
-        )
+        job_ids = []
+        for f in screenshot_files:
+            job = ProcessingJob(
+                user=request.user,
+                screenshot=f,
+                status='PENDING'
+            )
+            job.save()
+            job_ids.append(job.id)
+            
+        first_job = ProcessingJob.objects.get(id=job_ids[0])
         
         # Calculate queue position
-        position = ProcessingJob.objects.filter(status='PENDING', created_at__lt=job.created_at).count() + 1
+        position = ProcessingJob.objects.filter(status='PENDING', created_at__lt=first_job.created_at).count() + 1
         
         return JsonResponse({
-            'job_id': job.id,
+            'job_ids': job_ids,
+            'job_id': first_job.id, # Keep for backward compatibility if needed, but we will use job_ids on frontend
             'queue_position': position,
-            'status': job.status
+            'status': first_job.status,
+            'total_submitted': len(screenshot_files)
         })
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
