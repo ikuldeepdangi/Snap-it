@@ -21,6 +21,9 @@ RUN pip install --no-cache-dir gunicorn
 # Copy structural codebase
 COPY . .
 
+# Collect static files for WhiteNoise
+RUN python manage.py collectstatic --noinput
+
 # Expose internal standard port mapping
 EXPOSE 8080
 
