@@ -97,27 +97,26 @@ def send_user_email(profile, payload: Dict[str, Any], attachment_path: str) -> b
     try:
         service = build('gmail', 'v1', credentials=creds)
         
-        # Build MIME message
-        message = MIMEMultipart()
+        # Build message using modern EmailMessage API
+        message = EmailMessage()
         message['To'] = payload.get('hr_email')
         message['Subject'] = payload.get('email_subject', 'Application')
-        
-        # Add body
-        body = payload.get('email_body', '')
-        message.attach(MIMEText(body, 'plain'))
+        message.set_content(payload.get('email_body', ''))
         
         # Add attachment
-        if attachment_path and os.path.exists(attachment_path):
+        if attachment_path:
+            if not os.path.exists(attachment_path):
+                raise ValueError(f"Resume attachment not found at path: {attachment_path}")
+                
             with open(attachment_path, 'rb') as f:
-                part = MIMEBase('application', 'pdf')
-                part.set_payload(f.read())
-            encoders.encode_base64(part)
+                pdf_data = f.read()
             filename = os.path.basename(attachment_path)
-            part.add_header(
-                'Content-Disposition',
-                f'attachment; filename="{filename}"',
+            message.add_attachment(
+                pdf_data, 
+                maintype='application', 
+                subtype='pdf', 
+                filename=filename
             )
-            message.attach(part)
             
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
         
