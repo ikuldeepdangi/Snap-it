@@ -26,6 +26,7 @@ class UserProfile(models.Model):
     google_access_token = models.TextField(null=True, blank=True)
     token_expiry = models.DateTimeField(null=True, blank=True)
     custom_email_prompt = models.TextField(null=True, blank=True)
+    gmail_connected = models.BooleanField(default=False)
 
     def get_email_prompt(self):
         return self.custom_email_prompt if self.custom_email_prompt else DEFAULT_EMAIL_PROMPT
