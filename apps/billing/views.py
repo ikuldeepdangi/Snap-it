@@ -12,6 +12,10 @@ import os
 import json
 import hmac
 import hashlib
+from email.message import EmailMessage
+import base64
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 from .models import CreditWallet, TransactionLedger
 
@@ -32,6 +36,8 @@ def billing_page(request):
         'wallet': wallet,
         'transactions': transactions,
         'razorpay_key_id': RAZORPAY_KEY_ID,
+        'PAYMENT_MODE': os.getenv('PAYMENT_MODE', 'manual').strip().lower(),
+        'UPI_ID': os.getenv('UPI_ID', 'your@upi').strip(),
     }
     return render(request, 'billing/ledger.html', context)
 
@@ -149,4 +155,123 @@ def verify_razorpay_payment(request):
     except Exception as e:
         print(f"Payment verification error: {e}")
         return JsonResponse({'error': 'Server error'}, status=500)
+
+
+@login_required
+def manual_payment_request(request):
+    """
+    Handle the manual payment request form submission.
+    Sends an email from the user's connected Gmail account to the Admin with the screenshot.
+    """
+    if request.method != 'POST':
+        return redirect('billing_page')
+        
+    amount = request.POST.get('amount')
+    screenshots = request.FILES.getlist('screenshot')
+    
+    if not amount or not screenshots:
+        messages.error(request, "Please provide both amount and at least one screenshot of the transaction.")
+        return redirect('billing_page')
+        
+    admin_email = os.getenv("ADMIN_EMAIL", "kuldeepdangi@gmail.com")
+    user = request.user
+    
+    # Try to send email via user's Gmail API if connected
+    try:
+        if not hasattr(user, 'profile') or not user.profile.google_access_token or not user.profile.gmail_connected:
+            from django.utils.html import format_html
+            from django.urls import reverse
+            
+            admin_email_env = os.getenv('ADMIN_EMAIL', 'support@snapit.com')
+            connect_url = reverse('connect_gmail')
+            
+            msg = format_html(
+                'Gmail integration not fully connected. Cannot send automated email. '
+                '<strong><a href="{}" class="underline text-indigo-400 hover:text-indigo-300">Click here to Connect Gmail</a></strong> '
+                'or contact support manually at {}.',
+                connect_url, admin_email_env
+            )
+            messages.warning(request, msg)
+            return redirect('billing_page')
+        profile = user.profile
+        creds = Credentials(
+            token=profile.google_access_token,
+            refresh_token=profile.google_refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
+            client_secret=os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+        )
+        
+        service = build('gmail', 'v1', credentials=creds)
+        
+        # Build message using modern EmailMessage API
+        message = EmailMessage()
+        message['To'] = admin_email
+        message['Subject'] = f"Manual Payment Topup Request - {user.email}"
+        
+        body = f"""Hi SnapIt Accounts Team,
+
+I have recharged my account with ₹{amount}.
+Please review the attached transaction screenshot and top up my wallet.
+
+User Email: {user.email}
+User ID: {user.id}
+Amount Paid: ₹{amount}
+
+Thank you,
+{user.get_full_name() or user.email}
+"""
+        message.set_content(body)
+        
+        # Add screenshot attachments
+        for screenshot in screenshots:
+            file_data = screenshot.read()
+            file_name = screenshot.name
+            
+            # Determine mime type based on extension
+            import mimetypes
+            mime_type, _ = mimetypes.guess_type(file_name)
+            if mime_type is None:
+                mime_type = 'application/octet-stream'
+                
+            main_type, sub_type = mime_type.split('/', 1)
+            
+            message.add_attachment(
+                file_data, 
+                maintype=main_type, 
+                subtype=sub_type, 
+                filename=file_name
+            )
+            
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+        
+        service.users().messages().send(userId="me", body={'raw': raw_message}).execute()
+        
+        messages.success(request, f"Your request for ₹{amount} topup has been submitted to our team for verification.")
+        
+    except Exception as e:
+        error_str = str(e).lower()
+        print(f"Failed to send manual payment email: {e}")
+        
+        if "insufficient authentication scopes" in error_str or "insufficient permission" in error_str:
+            if hasattr(user, 'profile'):
+                user.profile.gmail_connected = False
+                user.profile.save()
+                
+            from django.utils.html import format_html
+            from django.urls import reverse
+            admin_email_env = os.getenv('ADMIN_EMAIL', 'support@snapit.com')
+            connect_url = reverse('connect_gmail')
+            
+            msg = format_html(
+                'Gmail permissions have expired or are missing. Cannot send automated email. '
+                '<strong><a href="{}" class="underline text-indigo-400 hover:text-indigo-300">Click here to Re-Connect Gmail</a></strong> '
+                'or contact support manually at {}.',
+                connect_url, admin_email_env
+            )
+            messages.warning(request, msg)
+        else:
+            messages.error(request, "Failed to submit request due to a server error. Please try again or contact support.")
+        
+    return redirect('billing_page')
 

@@ -23,6 +23,12 @@ def login_view(request):
     redirect_uri = request.build_absolute_uri(reverse('oauth_callback'))
     return redirect(get_google_auth_url(redirect_uri))
 
+@login_required
+def connect_gmail_view(request):
+    """Redirect to Google's OAuth2 consent screen to request Gmail scope."""
+    redirect_uri = request.build_absolute_uri(reverse('oauth_callback'))
+    return redirect(get_google_auth_url(redirect_uri, request_gmail=True))
+
 def oauth_callback_view(request):
     """Handle the OAuth2 callback from Google."""
     code = request.GET.get('code')
@@ -35,6 +41,8 @@ def oauth_callback_view(request):
         access_token = tokens.get('access_token')
         refresh_token = tokens.get('refresh_token')
         expires_in = tokens.get('expires_in', 3600)
+        scope_str = tokens.get('scope', '')
+        has_gmail = 'https://www.googleapis.com/auth/gmail.send' in scope_str
         
         # Get user info from Google
         user_info_response = requests.get(
@@ -58,6 +66,8 @@ def oauth_callback_view(request):
             profile.google_refresh_token = refresh_token
         profile.google_access_token = access_token
         profile.token_expiry = timezone.now() + timedelta(seconds=expires_in)
+        # Update gmail_connected if granted in this request or already True
+        profile.gmail_connected = has_gmail or profile.gmail_connected
         profile.save()
         
         # Ensure CreditWallet exists
@@ -95,10 +105,12 @@ def dashboard_view(request):
         
     has_resume = hasattr(request.user, 'resume')
     resume = request.user.resume if has_resume else None
+    profile = getattr(request.user, 'profile', None)
     
     return render(request, 'core/dashboard.html', {
         'has_resume': has_resume,
-        'resume': resume
+        'resume': resume,
+        'gmail_connected': profile.gmail_connected if profile else False
     })
 
 from django.core.paginator import Paginator
@@ -152,7 +164,7 @@ def config_view(request):
     if not profile:
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
         
-    from .models import DEFAULT_EMAIL_PROMPT
+    from .models import DEFAULT_CUSTOM_INSTRUCTIONS
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -166,10 +178,10 @@ def config_view(request):
                 profile.save()
         return redirect('config')
         
-    current_prompt = profile.custom_email_prompt if profile.custom_email_prompt else DEFAULT_EMAIL_PROMPT
+    current_prompt = profile.custom_email_prompt if profile.custom_email_prompt else DEFAULT_CUSTOM_INSTRUCTIONS
     
     return render(request, 'core/config.html', {
         'current_prompt': current_prompt,
         'is_custom': bool(profile.custom_email_prompt),
-        'default_prompt': DEFAULT_EMAIL_PROMPT
+        'default_prompt': DEFAULT_CUSTOM_INSTRUCTIONS
     })

@@ -50,7 +50,7 @@
 
     <!-- Content Card -->
     <div
-        class="glass-card rounded-2xl p-8 lg:p-10 border border-neutral-800 shadow-2xl bg-neutral-900/40 backdrop-blur-xl relative overflow-hidden">
+        class="glass-card rounded-2xl p-6 sm:p-8 lg:p-10 border border-neutral-800 shadow-2xl bg-neutral-900/40 backdrop-blur-xl relative overflow-hidden mx-2 sm:mx-0">
 
         <!-- Background Glow -->
         <div
@@ -67,8 +67,7 @@
                 </svg>
             </div>
             <h2 class="text-2xl sm:text-3xl font-bold mb-3 text-white">Connection Setup Successfully!</h2>
-            <p class="text-neutral-300 mb-6 text-base sm:text-lg">Your Telegram account <strong>@{{
-                    profile.telegram_username }}</strong> is fully linked.</p>
+            <p class="text-neutral-300 mb-6 text-base sm:text-lg">Your Telegram account <strong>@{{ profile.telegram_username }}</strong> is fully linked.</p>
             <div class="bg-neutral-900/80 rounded-xl p-5 border border-neutral-800 text-left max-w-md mx-auto mb-8">
                 <p class="text-sm text-neutral-400 leading-relaxed">
                     <strong class="text-white block mb-2">How to apply to jobs:</strong>
@@ -79,7 +78,7 @@
             </div>
 
             <a href="https://t.me/{{ bot_username }}" target="_blank"
-                class="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-xl text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+                class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3.5 border border-transparent text-sm sm:text-base font-medium rounded-xl text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]">
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                     <path
                         d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
@@ -101,9 +100,8 @@
             <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-white">Authorize Bot</h2>
 
             <div
-                class="bg-neutral-900/70 rounded-xl p-6 mb-8 border border-neutral-800 text-left max-w-lg mx-auto shadow-inner">
-                <p class="text-neutral-300 text-[15px] mb-4">Your username <strong>@{{ profile.telegram_username
-                        }}</strong> is recorded! We now need to securely link it to our bot.</p>
+                class="bg-neutral-900/70 rounded-xl p-5 sm:p-6 mb-8 border border-neutral-800 text-left max-w-lg mx-auto shadow-inner">
+                <p class="text-neutral-300 text-sm sm:text-[15px] mb-4">Your username <strong>@{{ profile.telegram_username }}</strong> is recorded! We now need to securely link it to our bot.</p>
                 <div class="flex items-start gap-3 p-4 bg-[#00c2ff]/5 border border-[#00c2ff]/20 rounded-lg">
                     <svg class="w-5 h-5 text-[#00c2ff] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
@@ -111,22 +109,20 @@
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <p class="text-neutral-400 text-sm leading-relaxed">
-                        Click the button below to open Telegram. Hit <strong>"START"</strong> to send the verification
-                        message to our bot. Once we receive your start message, this page will update automatically!
+                        Click the button below to open Telegram and send a friendly <strong>"Hello!"</strong> message to our bot. Once we receive your message, this page will update automatically!
                     </p>
                 </div>
             </div>
 
-            <a href="https://t.me/{{ bot_username }}?start={{ profile.verification_token }}" target="_blank"
-                class="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-xl text-black bg-[#00c2ff] hover:bg-white transition-all shadow-[0_0_20px_rgba(0,194,255,0.3)] hover:shadow-[0_0_30px_rgba(0,194,255,0.5)] mb-4">
+            <a href="https://t.me/{{ bot_username }}?text=Hello!" target="_blank"
+                class="w-full sm:w-auto inline-flex items-center justify-center px-4 sm:px-8 py-3.5 border border-transparent text-sm sm:text-base font-medium rounded-xl text-black bg-[#00c2ff] hover:bg-white transition-all shadow-[0_0_20px_rgba(0,194,255,0.3)] hover:shadow-[0_0_30px_rgba(0,194,255,0.5)] mb-4 text-center">
                 Open Telegram & Send Message
             </a>
 
             <p class="text-xs text-neutral-500">
-                Button not working? Open Telegram, search for <strong>@{{ bot_username }}</strong>, and send this exact
-                message:
+                Button not working? Open Telegram, search for <strong>@{{ bot_username }}</strong>, and simply send a message like:
                 <br><code
-                    class="bg-neutral-900 px-2 py-1 rounded text-[#00c2ff] mt-2 inline-block select-all">/start {{ profile.verification_token }}</code>
+                    class="bg-neutral-900 px-2 py-1 rounded text-[#00c2ff] mt-2 inline-block select-all">Hello!</code>
             </p>
         </div>
 
