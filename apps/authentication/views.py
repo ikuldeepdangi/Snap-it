@@ -164,7 +164,7 @@ def config_view(request):
     if not profile:
         profile, _ = UserProfile.objects.get_or_create(user=request.user)
         
-    from .models import DEFAULT_EMAIL_PROMPT
+    from .models import DEFAULT_CUSTOM_INSTRUCTIONS
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -178,10 +178,10 @@ def config_view(request):
                 profile.save()
         return redirect('config')
         
-    current_prompt = profile.custom_email_prompt if profile.custom_email_prompt else DEFAULT_EMAIL_PROMPT
+    current_prompt = profile.custom_email_prompt if profile.custom_email_prompt else DEFAULT_CUSTOM_INSTRUCTIONS
     
     return render(request, 'core/config.html', {
         'current_prompt': current_prompt,
         'is_custom': bool(profile.custom_email_prompt),
-        'default_prompt': DEFAULT_EMAIL_PROMPT
+        'default_prompt': DEFAULT_CUSTOM_INSTRUCTIONS
     })

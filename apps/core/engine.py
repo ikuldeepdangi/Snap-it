@@ -59,8 +59,8 @@ def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, mo
     pil_image = Image.open(path)
     
     if prompt_template is None:
-        from apps.authentication.models import DEFAULT_EMAIL_PROMPT
-        prompt_template = DEFAULT_EMAIL_PROMPT
+        from apps.authentication.models import UserProfile
+        prompt_template = UserProfile().get_email_prompt()
         
     prompt = prompt_template.format(
         resume_content=resume_content if resume_content else "No resume provided"

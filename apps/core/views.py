@@ -5,3 +5,6 @@ def privacy_view(request):
 
 def terms_view(request):
     return render(request, 'core/terms.html')
+
+def custom_404(request, exception=None):
+    return render(request, '404.html', status=404)

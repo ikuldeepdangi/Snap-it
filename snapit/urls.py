@@ -30,3 +30,9 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Add catch-all to render 404 in local dev mode
+    from django.urls import re_path
+    from apps.core.views import custom_404
+    urlpatterns.append(re_path(r'^.*/$', custom_404))
+
+handler404 = 'apps.core.views.custom_404'

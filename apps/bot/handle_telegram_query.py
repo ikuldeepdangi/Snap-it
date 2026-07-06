@@ -27,7 +27,7 @@ def get_or_verify_user(chat_id, username):
     # First, check if already verified by chat_id
     profile = TelegramProfile.objects.filter(telegram_chat_id=chat_id, is_verified=True).first()
     if profile:
-        return True
+        return True, False
         
     # If not verified by chat_id, check if they inputted this username on the web dashboard
     if username:
@@ -41,9 +41,9 @@ def get_or_verify_user(chat_id, username):
             profile.is_verified = True
             profile.verification_token = None
             profile.save()
-            return True
+            return True, True
             
-    return False
+    return False, False
 @csrf_exempt
 async def telegram_webhook(request):
     """
@@ -87,22 +87,31 @@ async def telegram_webhook(request):
                 
                 # Handle text messages
                 elif text:
-                    verified = await get_or_verify_user(chat_id, update.effective_user.username)
+                    verified, newly_linked = await get_or_verify_user(chat_id, update.effective_user.username)
                     if not verified:
                         await bot.send_message(
                             chat_id=chat_id, 
                             text="Please connect your username with the platform account first. Thank you!"
                         )
                     else:
-                        ai_response = await sync_to_async(generate_ai_reply)(text)
-                        await bot.send_message(
-                            chat_id=chat_id, 
-                            text=ai_response
-                        )
+                        if newly_linked:
+                            display_name = update.effective_user.username or update.effective_user.first_name or "there"
+                            greeting = (
+                                f"👋 Hello {display_name}! Welcome to SnapIt.\n\n"
+                                f"⚡ We've successfully linked your Telegram profile to your web account.\n\n"
+                                f"You can now manage your applications and apply to jobs directly through our bot."
+                            )
+                            await bot.send_message(chat_id=chat_id, text=greeting)
+                        else:
+                            ai_response = await sync_to_async(generate_ai_reply)(text)
+                            await bot.send_message(
+                                chat_id=chat_id, 
+                                text=ai_response
+                            )
                 
                 # Handle images and documents
                 elif update.message.photo or update.message.document:
-                    verified = await get_or_verify_user(chat_id, update.effective_user.username)
+                    verified, _ = await get_or_verify_user(chat_id, update.effective_user.username)
                     if not verified:
                         await bot.send_message(chat_id=chat_id, text="Please connect your username with the platform account first. Thank you!")
                         return HttpResponse("OK")
