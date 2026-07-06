@@ -1,3 +1,4 @@
+{% load static %}
 <div class="w-full">
     <div class="flex flex-row flex-wrap items-center justify-between gap-3 mb-6">
         <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Upload Job Screenshots</h2>
@@ -60,30 +61,22 @@
                 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             </style>
             <div class="flex overflow-x-auto snap-x gap-3 pb-3 sm:pb-0 sm:grid sm:grid-cols-4 hide-scrollbar">
-                <!-- Example placeholders simulating screenshots -->
-                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+                <!-- Example mock screenshots -->
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_indeed.png' %}" alt="Indeed React Developer" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">Indeed (React Dev)</div>
                 </div>
-                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_google.png' %}" alt="Google Jobs Data Scientist" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">Google Jobs (Data Scientist)</div>
                 </div>
-                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_linkedin.png' %}" alt="LinkedIn DevOps Engineer" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">LinkedIn (DevOps)</div>
                 </div>
-                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_wellfound.png' %}" alt="Wellfound Product Manager" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">Wellfound (PM)</div>
                 </div>
             </div>
         </div>
