@@ -6,6 +6,49 @@ from apps.queue_manager.models import ProcessingJob
 from apps.core.engine import analyze_screenshot_with_gemini, send_user_email
 from apps.billing.utils import deduct_credit_atomically
 
+def clean_error_message(error_msg: str) -> str:
+    """Converts raw technical exception messages into user-friendly explanations."""
+    error_msg_lower = error_msg.lower()
+    
+    # 1. Recipient/To header issues (invalid email or missing email)
+    if "invalid to header" in error_msg_lower or "invalid_argument" in error_msg_lower:
+        return (
+            "Invalid recipient email address. The system could not extract a valid "
+            "recruiter email address from the screenshot, or the extracted address is malformed. "
+            "Please ensure the recruiter's email is visible and correct."
+        )
+        
+    # 2. Resume missing
+    if "resume attachment not found" in error_msg_lower:
+        return "Your uploaded resume file could not be found. Please re-upload your resume on the dashboard and try again."
+    if "user has no active resume" in error_msg_lower:
+        return "No active resume found. Please upload your resume in PDF format on the dashboard before uploading job screenshots."
+        
+    # 3. Google/Gmail Auth issues
+    if "credentials" in error_msg_lower or "token" in error_msg_lower or "auth" in error_msg_lower:
+        return (
+            "Google/Gmail authentication failed or expired. Please disconnect and "
+            "reconnect your Google account on the dashboard to renew permissions."
+        )
+        
+    # 4. Credit balance issues
+    if "insufficient credit" in error_msg_lower or "credit balance" in error_msg_lower:
+        return "Insufficient credits. Please check your wallet balance or purchase more credits to process this job."
+        
+    # 5. Gemini AI parsing issues
+    if "gemini ai error" in error_msg_lower or "ai could not read" in error_msg_lower:
+        return (
+            "AI analysis failed. We were unable to read or parse the job details "
+            "from your screenshot. Please upload a clearer image."
+        )
+        
+    # Fallback to a cleaner generic message if it's already short and readable
+    if len(error_msg) < 100:
+        return error_msg
+        
+    return "An unexpected error occurred while processing your request. Please try again with a clearer screenshot."
+
+
 class Command(BaseCommand):
     help = 'Runs the persistent background queue worker for processing jobs.'
 
@@ -123,8 +166,9 @@ class Command(BaseCommand):
                 # 5. Handle Failure
                 job.status = 'FAILED'
                 error_msg = str(e)
+                clean_msg = clean_error_message(error_msg)
                 job.result_data = job.result_data or {}
-                job.result_data['worker_error'] = error_msg
+                job.result_data['worker_error'] = clean_msg
                 job.save()
                 self.stderr.write(self.style.ERROR(f"Job {job.id} FAILED: {error_msg}"))
                 
@@ -135,7 +179,7 @@ class Command(BaseCommand):
                         tg_id = job.user.telegram_profile.telegram_chat_id
                         notification_text = (
                             f"❌ Job Processing Failed!\n\n"
-                            f"An error occurred while processing your screenshot: {error_msg}\n"
+                            f"An error occurred while processing your screenshot: {clean_msg}\n"
                             f"Please make sure the screenshot clearly shows the HR email and try again."
                         )
                         send_async_telegram_alert(tg_id, notification_text)
