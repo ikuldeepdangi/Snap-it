@@ -123,6 +123,8 @@ def history_view(request):
     status = request.GET.get('status')
     if status in ['COMPLETED', 'FAILED']:
         jobs_list = jobs_list.filter(status=status)
+    elif status == 'PENDING':
+        jobs_list = jobs_list.filter(status__in=['PENDING', 'PROCESSING'])
         
     jobs_list = jobs_list.order_by('-created_at')
     
