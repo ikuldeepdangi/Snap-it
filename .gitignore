@@ -42,3 +42,9 @@ media/
 # AI Agent files
 .agents/
 skills-lock.json
+
+# Django staticfiles (collected)
+staticfiles/
+
+# Scratch directory
+scratch/

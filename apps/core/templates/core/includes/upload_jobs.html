@@ -1,24 +1,47 @@
+{% load static %}
 <div class="w-full">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-white tracking-tight">Upload Job Screenshots</h2>
+    <div class="flex flex-row flex-wrap items-center justify-between gap-3 mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Upload Job Screenshots</h2>
         <span class="text-xs font-medium text-neutral-500 bg-neutral-900 px-3 py-1.5 rounded-full border border-neutral-800">Step 2 of 4</span>
     </div>
 
     <!-- Main Upload Area -->
     <div class="w-full bg-[#0d0d0d] rounded-2xl border border-indigo-500/30 relative overflow-hidden mb-8">
-        <form id="job-form" class="w-full flex flex-col items-center justify-center p-8">
-            <div id="job-drop-zone" onclick="document.getElementById('job-file').click()" class="w-full min-h-[300px] border-2 border-dashed border-indigo-500/40 hover:border-indigo-400/80 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all duration-300 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer group">
-                <svg class="w-10 h-10 text-indigo-400 mb-4 group-hover:-translate-y-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        {% if gmail_connected %}
+        <form id="job-form" class="w-full flex flex-col items-center justify-center p-4 sm:p-8">
+            <div id="job-drop-zone" onclick="document.getElementById('job-file').click()" class="w-full min-h-[220px] sm:min-h-[300px] border-2 border-dashed border-indigo-500/40 hover:border-indigo-400/80 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all duration-300 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer group px-4 pt-6 pb-10 sm:py-8">
+                <svg class="w-10 h-10 sm:w-12 sm:h-12 text-indigo-400 mb-4 sm:mb-6 group-hover:-translate-y-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="17 8 12 3 7 8"></polyline>
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
-                <p class="text-lg font-medium text-white mb-4">Drag & drop job screenshots here<br><span class="text-sm font-normal text-neutral-500">or</span></p>
-                <div class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20 mb-6">Browse Files</div>
-                <p class="text-sm text-neutral-400">Supports PNG, JPG • You can select multiple files</p>
+                <p class="text-sm sm:text-lg font-medium text-white mb-3 sm:mb-4">Drag & drop job screenshots here<br><span class="text-[11px] sm:text-sm font-normal text-neutral-500 mt-1 inline-block">or</span></p>
+                <div class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-500/20 mb-4 sm:mb-6 text-sm">Browse Files</div>
+                <p class="text-xs sm:text-sm text-neutral-400 px-4 leading-relaxed mt-2 sm:mt-0">Supports PNG, JPG • You can select multiple files</p>
                 <input type="file" name="screenshot" id="job-file" accept="image/png, image/jpeg" multiple="multiple" class="hidden" onchange="submitJob()">
             </div>
         </form>
+        {% else %}
+        <div class="w-full flex flex-col items-center justify-center p-12 text-center">
+            <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+            </div>
+            <h3 class="text-lg sm:text-xl font-bold text-white mb-2">Gmail Connection Required</h3>
+            <p class="text-sm sm:text-base text-neutral-400 mb-8 max-w-md">
+                To automate your job applications, we need permission to send emails on your behalf to HR. You cannot proceed without allowing this permission.
+            </p>
+            <a href="{% url 'connect_gmail' %}" class="w-full sm:w-auto justify-center bg-red-600 hover:bg-red-500 text-white text-sm sm:text-base font-medium px-6 sm:px-8 py-3 rounded-xl transition-all shadow-lg shadow-red-600/20 flex items-center gap-2">
+                <span>Connect Gmail to Continue</span>
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Tips & Examples section -->
@@ -31,33 +54,29 @@
                 Upload clear screenshots of job postings from LinkedIn, company career pages, Indeed, Wellfound, etc. Make sure the role requirements and company description are visible.
             </p>
         </div>
-        <div class="col-span-2">
+        <div class="col-span-1 lg:col-span-2">
             <h3 class="text-sm font-semibold text-white mb-3">Examples</h3>
-            <div class="grid grid-cols-4 gap-3">
-                <!-- Example placeholders simulating screenshots -->
-                <div class="aspect-[4/3] bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+            <style>
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            </style>
+            <div class="flex overflow-x-auto snap-x gap-3 pb-3 sm:pb-0 sm:grid sm:grid-cols-4 hide-scrollbar">
+                <!-- Example mock screenshots -->
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_indeed.png' %}" alt="Indeed React Developer" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">Indeed (React Dev)</div>
                 </div>
-                <div class="aspect-[4/3] bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_google.png' %}" alt="Google Jobs Data Scientist" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">Google Jobs (Data Scientist)</div>
                 </div>
-                <div class="aspect-[4/3] bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_linkedin.png' %}" alt="LinkedIn DevOps Engineer" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">LinkedIn (DevOps)</div>
                 </div>
-                <div class="aspect-[4/3] bg-neutral-800 rounded-lg border border-neutral-700 opacity-60 flex flex-col gap-1 p-2">
-                    <div class="h-2 w-3/4 bg-neutral-700 rounded"></div>
-                    <div class="h-2 w-1/2 bg-neutral-700 rounded mb-1"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
-                    <div class="h-1.5 w-full bg-neutral-700 rounded"></div>
+                <div class="aspect-[4/3] w-[75%] sm:w-auto shrink-0 snap-center rounded-lg border border-neutral-800 overflow-hidden relative group cursor-pointer hover:border-neutral-600 transition-colors">
+                    <img src="{% static 'authentication/images/example_wellfound.png' %}" alt="Wellfound Product Manager" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute bottom-0 inset-x-0 bg-black/85 px-2 py-1.5 text-[10px] text-center font-medium text-neutral-300">Wellfound (PM)</div>
                 </div>
             </div>
         </div>

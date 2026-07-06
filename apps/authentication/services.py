@@ -2,10 +2,12 @@ import os
 import urllib.parse
 import requests
 
-def get_google_auth_url(redirect_uri: str) -> str:
-    """Construct the authorization URL requesting gmail.send scope."""
+def get_google_auth_url(redirect_uri: str, request_gmail: bool = False) -> str:
+    """Construct the authorization URL."""
     client_id = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
-    scope = "https://www.googleapis.com/auth/gmail.send email profile"
+    scope = "email profile"
+    if request_gmail:
+        scope += " https://www.googleapis.com/auth/gmail.send"
     
     params = {
         "client_id": client_id,
@@ -15,6 +17,9 @@ def get_google_auth_url(redirect_uri: str) -> str:
         "access_type": "offline",
         "prompt": "consent",
     }
+    if request_gmail:
+        params["include_granted_scopes"] = "true"
+        
     url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
     return url
 

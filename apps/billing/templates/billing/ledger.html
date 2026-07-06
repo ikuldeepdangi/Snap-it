@@ -2,481 +2,296 @@
 
 {% block content %}
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<style>
-    :root {
-        --bg-panel: #171717;
-        --border-color: #262626;
-        --text-main: #EDEDED;
-        --text-muted: #A3A3A3;
-        --accent: #6366f1;
-        --accent-hover: #4f46e5;
-        --success: #22c55e;
-        --card-gradient: linear-gradient(145deg, #111827 0%, #171717 100%);
-    }
-    
-    .page-title {
-        margin-bottom: 2rem;
-    }
-    .page-title h1 {
-        font-size: 1.8rem;
-        margin: 0 0 0.5rem 0;
-        font-weight: 700;
-    }
-    .page-title p {
-        color: var(--text-muted);
-        margin: 0;
-        font-size: 0.95rem;
-    }
-    
-    .flex-container {
-        display: flex;
-        gap: 2rem;
-        margin-bottom: 3rem;
-        flex-wrap: wrap;
-    }
-    
-    /* Credits Remaining Card */
-    .card-wallet {
-        background: var(--card-gradient);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 1rem;
-        padding: 1.5rem;
-        flex: 1 1 280px;
-        display: flex;
-        flex-direction: column;
-        position: relative;
-        overflow: hidden;
-    }
-    .badge-credits {
-        background: rgba(99, 102, 241, 0.1);
-        color: var(--accent);
-        padding: 0.4rem 1rem;
-        border-radius: 2rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        display: inline-block;
-        margin-bottom: 1.5rem;
-        align-self: flex-start;
-        border: 1px solid rgba(99, 102, 241, 0.2);
-    }
-    .credits-val {
-        font-size: 3.5rem;
-        font-weight: 700;
-        margin: 0;
-        line-height: 1;
-        display: flex;
-        align-items: baseline;
-        gap: 0.5rem;
-    }
-    .credits-label {
-        font-size: 1rem;
-        color: var(--text-muted);
-        font-weight: 500;
-    }
-    .wallet-desc {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin-top: 1.5rem;
-        line-height: 1.5;
-    }
-    .verified-status {
-        margin-top: auto;
-        padding-top: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.8rem;
-        color: var(--text-muted);
-    }
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        background: var(--success);
-        border-radius: 50%;
-        box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-    }
-    
-    /* Checkout Card */
-    .card-checkout {
-        background: var(--bg-panel);
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
-        padding: 1.5rem;
-        flex: 2 1 280px;
-    }
-    .checkout-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem 0;
-    }
-    .checkout-subtitle {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin: 0 0 2rem 0;
-    }
-    
-    .amount-input-group {
-        background: #0A0A0A;
-        border: 1px solid var(--border-color);
-        border-radius: 0.75rem;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-    .input-label {
-        display: block;
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        margin-bottom: 1rem;
-        letter-spacing: 0.5px;
-    }
-    .input-wrapper {
-        display: flex;
-        align-items: center;
-        background: var(--bg-panel);
-        border: 1px solid var(--border-color);
-        border-radius: 0.5rem;
-        overflow: hidden;
-        transition: border-color 0.2s;
-    }
-    .input-wrapper:focus-within {
-        border-color: var(--accent);
-    }
-    .currency-prefix {
-        padding: 0.8rem 1rem;
-        color: var(--text-muted);
-        font-weight: 600;
-        background: rgba(255,255,255,0.02);
-        border-right: 1px solid var(--border-color);
-    }
-    .amount-input {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: var(--text-main);
-        padding: 0.8rem 1rem;
-        font-size: 1rem;
-        font-family: inherit;
-        outline: none;
-    }
-    .points-preview {
-        margin-top: 1rem;
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .btn-pay {
-        width: 100%;
-        background: var(--accent);
-        color: white;
-        border: none;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-    .btn-pay:hover {
-        background: var(--accent-hover);
-        transform: translateY(-1px);
-    }
-    .btn-pay:active {
-        transform: translateY(0);
-    }
-    .btn-pay:disabled {
-        background: #475569;
-        cursor: not-allowed;
-        transform: none;
-    }
-    
-    /* Table Styles */
-    .table-container {
-        background: var(--bg-panel);
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
-        overflow-x: auto;
-    }
-    .table-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-    .table-header h2 {
-        margin: 0;
-        font-size: 1.25rem;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th {
-        text-align: left;
-        padding: 1rem 1.5rem;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--text-muted);
-        border-bottom: 1px solid var(--border-color);
-        background: rgba(0,0,0,0.2);
-    }
-    td {
-        padding: 1rem 1.5rem;
-        font-size: 0.9rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-    tr:last-child td {
-        border-bottom: none;
-    }
-    tr:hover td {
-        background: rgba(255,255,255,0.02);
-    }
-    .credit-positive {
-        color: var(--success);
-        font-weight: 600;
-    }
-    .credit-negative {
-        color: #ef4444;
-        font-weight: 600;
-    }
-    .badge-type {
-        font-size: 0.8rem;
-        background: rgba(255,255,255,0.05);
-        padding: 0.2rem 0.6rem;
-        border-radius: 1rem;
-    }
 
-    .alert {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 2rem;
-        font-size: 0.9rem;
-    }
-    .alert-success {
-        background: rgba(34, 197, 94, 0.1);
-        color: #4ade80;
-        border: 1px solid rgba(34, 197, 94, 0.2);
-    }
-    .alert-warning {
-        background: rgba(234, 179, 8, 0.1);
-        color: #facc15;
-        border: 1px solid rgba(234, 179, 8, 0.2);
-    }
-</style>
-
-{% if messages %}
+<div class="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    {% if messages %}
     {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-        </div>
+    <div
+        class="p-4 rounded-lg mb-8 text-sm {% if message.tags == 'success' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %}">
+        {{ message|safe }}
+    </div>
     {% endfor %}
-{% endif %}
+    {% endif %}
 
-<div class="page-title">
-    <h1>System Billing & Points Ledger</h1>
-    <p>Add balance credits to your account wallet and review transactional invoice ledgers.</p>
-</div>
-
-<div class="flex-container">
-    <!-- Wallet Card -->
-    <div class="card-wallet">
-        <div class="badge-credits">CREDITS REMAINING</div>
-        <div class="credits-val">
-            {{ wallet.balance }} <span class="credits-label">Credits</span>
-        </div>
-        <p class="wallet-desc">
-            Each credit corresponds directly to one successful application run. If an email fails, credits are preserved.
-        </p>
-        <div class="verified-status">
-            <div class="status-dot"></div>
-            Verified via Secure Engine
-        </div>
+    <div class="mb-8 md:mb-10">
+        <h1 class="text-2xl md:text-3xl font-semibold text-white tracking-tight mb-2">System Billing & Points Ledger
+        </h1>
+        <p class="text-neutral-400 text-sm md:text-[15px]">Add balance credits to your account wallet and review
+            transactional invoice ledgers.</p>
     </div>
-    
-    <!-- Checkout Card -->
-    <div class="card-checkout">
-        <h2 class="checkout-title">Credit Replenishment</h2>
-        <p class="checkout-subtitle">Enter the amount to replenish your account balance (1 Rs = 1 Point).</p>
-        
-        <div class="amount-input-group">
-            <label class="input-label">
-                <svg style="vertical-align: bottom; margin-right: 4px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                Secure Checkout Entry
-            </label>
-            <div class="input-wrapper">
-                <span class="currency-prefix">₹</span>
-                <input type="number" id="amount-input" class="amount-input" placeholder="Enter amount..." min="1" step="1">
+
+    <div class="flex flex-col md:flex-row gap-4 md:gap-6 mb-12">
+        <!-- Wallet Card -->
+        <div
+            class="bg-gradient-to-br from-neutral-900 to-[#0A0A0A] border border-neutral-800/80 rounded-2xl p-5 md:p-7 flex-1 flex flex-col relative overflow-hidden shadow-2xl">
+            <div
+                class="inline-flex self-start px-3 py-1.5 bg-indigo-500/10 text-indigo-400 text-[11px] font-bold uppercase tracking-wider rounded-full border border-indigo-500/20 mb-6 md:mb-8">
+                Credits Remaining
             </div>
-            <div class="points-preview">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                You will receive <strong id="points-preview-val">0</strong> points
+
+            <div class="text-5xl md:text-6xl font-bold text-white leading-none flex items-baseline gap-2 mb-4">
+                {{ wallet.balance }} <span class="text-base md:text-lg font-medium text-neutral-500">Credits</span>
+            </div>
+
+            <p class="text-[13px] md:text-sm text-neutral-400 leading-relaxed mb-8">
+                Each credit corresponds directly to one successful application run. If an email fails, credits are
+                preserved.
+            </p>
+
+            <div
+                class="mt-auto pt-5 md:pt-6 border-t border-neutral-800/50 flex items-center gap-2.5 text-xs text-neutral-500">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                Verified via Secure Engine
             </div>
         </div>
+
+        <!-- Checkout Card -->
+        <div class="bg-[#0c0c0c] border border-neutral-800/60 rounded-2xl p-5 md:p-7 flex-[2] shadow-xl">
+            <h2 class="text-lg md:text-xl font-semibold text-white mb-2">Credit Replenishment</h2>
+            <p class="text-[13px] md:text-sm text-neutral-400 mb-6 md:mb-8">Enter the amount to replenish your account
+                balance (1 Rs = 1 Point).</p>
+
+            <div class="bg-[#0a0a0a] border border-neutral-800/80 rounded-xl p-4 md:p-5 mb-6 md:mb-8">
+                <label
+                    class="flex items-center text-[11px] md:text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
+                    <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Secure Checkout Entry
+                </label>
+
+                <div
+                    class="flex items-center bg-[#111] border border-neutral-700 rounded-lg overflow-hidden focus-within:border-indigo-500 transition-colors">
+                    <span
+                        class="px-4 py-3 text-neutral-400 font-semibold bg-white/5 border-r border-neutral-700">₹</span>
+                    <input type="number" id="amount-input"
+                        class="flex-1 bg-transparent border-none text-white px-4 py-3 text-sm md:text-base outline-none w-full"
+                        placeholder="Enter amount..." min="1" step="1">
+                </div>
+
+            <div class="mt-3 text-[13px] text-neutral-400 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                You will receive <strong id="points-preview-val" class="text-white mx-1">0</strong> points
+            </div>
+        </div>
+
+        {% if PAYMENT_MODE == 'manual' or PAYMENT_MODE == 'mannual' %}
+            <button id="manual-pay-button" onclick="openManualModal()"
+                class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-sm md:text-[15px] font-semibold py-3.5 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+                disabled>
+                Pay Securely via UPI / Cards
+            </button>
+        {% else %}
+            <button id="pay-button"
+                class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-sm md:text-[15px] font-semibold py-3.5 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+                disabled>
+                Pay Securely via UPI / Cards
+            </button>
+        {% endif %}
         
-        <button id="pay-button" class="btn-pay" disabled>
-            Pay Securely via UPI / Cards
-        </button>
-        <div id="payment-error" style="color: #ef4444; margin-top: 1rem; font-size: 0.85rem; display: none;"></div>
+        <div id="payment-error"
+            class="text-red-400 mt-4 text-[13px] hidden bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+        </div>
     </div>
 </div>
 
-<div class="page-title" style="margin-top: 4rem;">
-    <h1>Transaction Ledger Invoice Records</h1>
-</div>
+    <div class="mb-6 md:mb-8 mt-12 md:mt-16">
+        <h2 class="text-xl md:text-2xl font-semibold text-white tracking-tight">Transaction Ledger Invoice Records</h2>
+    </div>
 
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>Timestamp Date</th>
-                <th>Description</th>
-                <th>Type Method</th>
-                <th style="text-align: right;">Credits Delta</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tx in transactions %}
-            <tr>
-                <td style="color: var(--text-muted);">{{ tx.created_at|date:"Y-m-d H:i" }}</td>
-                <td>{{ tx.description|default:"-" }}</td>
-                <td><span class="badge-type">{{ tx.get_transaction_type_display|default:tx.transaction_type }}</span></td>
-                <td style="text-align: right;">
-                    {% if tx.amount > 0 %}
-                        <span class="credit-positive">+{{ tx.amount }} pts</span>
-                    {% else %}
-                        <span class="credit-negative">{{ tx.amount }} pts</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 3rem;">
-                    No transactions found in your ledger.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <div class="bg-[#0c0c0c] border border-neutral-800/60 rounded-xl overflow-x-auto shadow-xl">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
+            <thead>
+                <tr class="bg-neutral-900/30">
+                    <th
+                        class="px-5 md:px-6 py-4 text-[11px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60">
+                        Timestamp Date</th>
+                    <th
+                        class="px-5 md:px-6 py-4 text-[11px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60">
+                        Description</th>
+                    <th
+                        class="px-5 md:px-6 py-4 text-[11px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60">
+                        Type Method</th>
+                    <th
+                        class="px-5 md:px-6 py-4 text-[11px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60 text-right">
+                        Credits Delta</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-800/60">
+                {% for tx in transactions %}
+                <tr class="hover:bg-neutral-800/30 transition-colors group">
+                    <td class="px-5 md:px-6 py-4 text-[13px] md:text-sm text-neutral-400">{{ tx.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="px-5 md:px-6 py-4 text-[13px] md:text-sm text-neutral-300">{{ tx.description|default:"-" }}</td>
+                    <td class="px-5 md:px-6 py-4">
+                        <span
+                            class="text-[11px] bg-white/5 text-neutral-300 px-2.5 py-1 rounded-full border border-neutral-800">{{ tx.get_transaction_type_display|default:tx.transaction_type }}</span>
+                    </td>
+                    <td class="px-5 md:px-6 py-4 text-right text-[13px] md:text-sm font-medium">
+                        {% if tx.amount > 0 %}
+                        <span class="text-emerald-400">+{{ tx.amount }} pts</span>
+                        {% else %}
+                        <span class="text-red-400">{{ tx.amount }} pts</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center text-sm text-neutral-500">
+                        No transactions found in your ledger.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% include 'billing/manual.html' %}
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    function openManualModal() {
+        const amount = document.getElementById('amount-input').value;
+        document.getElementById('manual-amount').value = amount;
+        const modal = document.getElementById('manual-payment-modal');
+        modal.classList.remove('hidden');
+    }
+    
+    function closeManualModal() {
+        const modal = document.getElementById('manual-payment-modal');
+        modal.classList.add('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
         const amountInput = document.getElementById('amount-input');
         const pointsPreview = document.getElementById('points-preview-val');
         const payButton = document.getElementById('pay-button');
+        const manualPayButton = document.getElementById('manual-pay-button');
         const errorDiv = document.getElementById('payment-error');
-        
-        amountInput.addEventListener('input', function() {
+
+        amountInput.addEventListener('input', function () {
             const val = parseInt(this.value);
+            
             if (val && val >= 1) {
                 pointsPreview.textContent = val;
-                payButton.disabled = false;
-                payButton.textContent = `Pay ₹${val}.00 Securely via UPI / Cards`;
+                if (payButton) {
+                    payButton.disabled = false;
+                    payButton.textContent = `Pay ₹${val}.00 Securely via UPI / Cards`;
+                }
+                if (manualPayButton) {
+                    manualPayButton.disabled = false;
+                    manualPayButton.textContent = `Pay ₹${val}.00 via UPI (Manual)`;
+                }
             } else {
                 pointsPreview.textContent = '0';
-                payButton.disabled = true;
-                if (val && val < 1) {
-                    payButton.textContent = `Minimum ₹1 Required`;
-                } else {
-                    payButton.textContent = `Pay Securely via UPI / Cards`;
+                if (payButton) {
+                    payButton.disabled = true;
+                    if (val && val < 1) {
+                        payButton.textContent = `Minimum ₹1 Required`;
+                    } else {
+                        payButton.textContent = `Pay Securely via UPI / Cards`;
+                    }
+                }
+                if (manualPayButton) {
+                    manualPayButton.disabled = true;
+                    if (val && val < 1) {
+                        manualPayButton.textContent = `Minimum ₹1 Required`;
+                    } else {
+                        manualPayButton.textContent = `Pay Securely via UPI / Cards`;
+                    }
                 }
             }
         });
 
-        payButton.addEventListener('click', async function() {
-            const amount = parseInt(amountInput.value);
-            if (!amount || amount < 1) return;
-            
-            payButton.disabled = true;
-            payButton.textContent = 'Processing...';
-            errorDiv.style.display = 'none';
+        if (payButton) {
+            payButton.addEventListener('click', async function () {
+                const amount = parseInt(amountInput.value);
+                if (!amount || amount < 1) return;
 
-            try {
-                const response = await fetch("{% url 'create_razorpay_order' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({ amount: amount })
-                });
-                
-                const data = await response.json();
-                
-                if (data.order_id) {
-                    var options = {
-                        "key": "{{ razorpay_key_id }}",
-                        "amount": data.amount,
-                        "currency": data.currency,
-                        "name": "SnapIt Credits",
-                        "description": "Replenish account balance",
-                        "order_id": data.order_id,
-                        "handler": async function (response){
-                            try {
-                                const verifyRes = await fetch("{% url 'verify_razorpay_payment' %}", {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-CSRFToken': '{{ csrf_token }}'
-                                    },
-                                    body: JSON.stringify({
-                                        razorpay_payment_id: response.razorpay_payment_id,
-                                        razorpay_order_id: response.razorpay_order_id,
-                                        razorpay_signature: response.razorpay_signature,
-                                        amount: amount
-                                    })
-                                });
-                                const verifyData = await verifyRes.json();
-                                if(verifyData.status === 'ok') {
-                                    window.location.href = verifyData.redirect_url || "{% url 'billing_page' %}";
-                                } else {
-                                    errorDiv.textContent = verifyData.error || 'Verification failed.';
+                payButton.disabled = true;
+                payButton.textContent = 'Processing...';
+                errorDiv.style.display = 'none';
+
+                try {
+                    const response = await fetch("{% url 'create_razorpay_order' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ amount: amount })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.order_id) {
+                        var options = {
+                            "key": "{{ razorpay_key_id }}",
+                            "amount": data.amount,
+                            "currency": data.currency,
+                            "name": "SnapIt Credits",
+                            "description": "Replenish account balance",
+                            "order_id": data.order_id,
+                            "handler": async function (response) {
+                                try {
+                                    const verifyRes = await fetch("{% url 'verify_razorpay_payment' %}", {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRFToken': '{{ csrf_token }}'
+                                        },
+                                        body: JSON.stringify({
+                                            razorpay_payment_id: response.razorpay_payment_id,
+                                            razorpay_order_id: response.razorpay_order_id,
+                                            razorpay_signature: response.razorpay_signature,
+                                            amount: amount
+                                        })
+                                    });
+                                    const verifyData = await verifyRes.json();
+                                    if (verifyData.status === 'ok') {
+                                        window.location.href = verifyData.redirect_url || "{% url 'billing_page' %}";
+                                    } else {
+                                        errorDiv.textContent = verifyData.error || 'Verification failed.';
+                                        errorDiv.style.display = 'block';
+                                        payButton.disabled = false;
+                                        payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                                    }
+                                } catch (e) {
+                                    errorDiv.textContent = 'Error verifying payment.';
                                     errorDiv.style.display = 'block';
                                     payButton.disabled = false;
                                     payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
                                 }
-                            } catch (e) {
-                                errorDiv.textContent = 'Error verifying payment.';
-                                errorDiv.style.display = 'block';
-                                payButton.disabled = false;
-                                payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                            },
+                            "theme": {
+                                "color": "#6366f1"
                             }
-                        },
-                        "theme": {
-                            "color": "#6366f1"
-                        }
-                    };
-                    var rzp1 = new Razorpay(options);
-                    rzp1.on('payment.failed', function (response){
+                        };
+                        var rzp1 = new Razorpay(options);
+                        rzp1.on('payment.failed', function (response) {
                             errorDiv.textContent = 'Payment failed: ' + response.error.description;
                             errorDiv.style.display = 'block';
                             payButton.disabled = false;
                             payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
-                    });
-                    rzp1.open();
-                } else if (data.error) {
-                    errorDiv.textContent = data.error;
+                        });
+                        rzp1.open();
+                    } else if (data.error) {
+                        errorDiv.textContent = data.error;
+                        errorDiv.style.display = 'block';
+                        payButton.disabled = false;
+                        payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    errorDiv.textContent = 'An unexpected error occurred. Please try again.';
                     errorDiv.style.display = 'block';
                     payButton.disabled = false;
                     payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
                 }
-            } catch (err) {
-                console.error(err);
-                errorDiv.textContent = 'An unexpected error occurred. Please try again.';
-                errorDiv.style.display = 'block';
-                payButton.disabled = false;
-                payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
-            }
-        });
+            });
+        }
     });
 </script>
 {% endblock %}
