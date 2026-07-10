@@ -19,11 +19,27 @@ def submit_job_view(request):
         if wallet.balance < len(screenshot_files):
             return JsonResponse({'error': f'Insufficient credits. You need {len(screenshot_files)} credits.'}, status=402)
         
+        import config
+        from utils.storage import get_file_extension, upload_temp_file, get_public_url
+
+        # Validate all files first
+        for f in screenshot_files:
+            if f.size > config.MAX_CONTENT_LENGTH:
+                return JsonResponse({'error': f'File size exceeds the maximum limit of {config.MAX_CONTENT_LENGTH // (1024*1024)} MB.'}, status=400)
+            
+            ext = get_file_extension(f.name).lstrip('.')
+            if ext not in config.ALLOWED_IMAGE_EXTENSIONS:
+                return JsonResponse({'error': f'Unsupported file type. Allowed formats: {", ".join(config.ALLOWED_IMAGE_EXTENSIONS)}'}, status=400)
+
         job_ids = []
         for f in screenshot_files:
+            storage_path = upload_temp_file(f, user_id=request.user.id)
+            public_url = get_public_url(storage_path)
+            
             job = ProcessingJob(
                 user=request.user,
-                screenshot=f,
+                screenshot_storage_path=storage_path,
+                screenshot_public_url=public_url,
                 status='PENDING'
             )
             job.save()

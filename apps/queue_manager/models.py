@@ -9,8 +9,10 @@ class ProcessingJob(models.Model):
         ('FAILED', 'Failed'),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='processing_jobs')
-    screenshot = models.ImageField(upload_to='screenshots/')
+    screenshot_storage_path = models.CharField(max_length=512, blank=True, null=True)
+    screenshot_public_url = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+
     result_data = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

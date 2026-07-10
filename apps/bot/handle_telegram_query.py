@@ -210,10 +210,22 @@ def process_single_media(chat_id, file_bytes, file_name, is_pdf):
     user = profile.user
     wallet = user.credit_wallet
     
-    if not hasattr(user, 'resume') or not user.resume.file:
+    if not hasattr(user, 'resume') or not user.resume.resume_storage_path:
         if is_pdf:
             resume, _ = Resume.objects.get_or_create(user=user)
-            resume.file.save(file_name, ContentFile(file_bytes))
+            
+            from utils.storage import upload_resume, get_public_url, delete_file
+            if resume.resume_storage_path:
+                delete_file(resume.resume_storage_path)
+                
+            wrapped_file = ContentFile(file_bytes, name=file_name)
+            storage_path = upload_resume(wrapped_file, user.id)
+            public_url = get_public_url(storage_path)
+            
+            resume.resume_storage_path = storage_path
+            resume.resume_public_url = public_url
+            resume.save()
+            
             from apps.core.engine import extract_text_from_pdf
             extract_text_from_pdf(resume)
             return "resume_saved"
@@ -227,7 +239,14 @@ def process_single_media(chat_id, file_bytes, file_name, is_pdf):
         return f"insufficient_{wallet.balance}"
         
     job = ProcessingJob.objects.create(user=user, status='PROCESSING')
-    job.screenshot.save(file_name, ContentFile(file_bytes))
+    
+    from utils.storage import upload_temp_file, get_public_url
+    wrapped_file = ContentFile(file_bytes, name=file_name)
+    storage_path = upload_temp_file(wrapped_file, user.id)
+    public_url = get_public_url(storage_path)
+    
+    job.screenshot_storage_path = storage_path
+    job.screenshot_public_url = public_url
     job.status = 'PENDING'
     job.save()
     return f"job_created_{job.id}"
@@ -242,7 +261,7 @@ def process_album_batch(chat_id, file_ids):
     user = profile.user
     wallet = user.credit_wallet
     
-    if not hasattr(user, 'resume') or not user.resume.file:
+    if not hasattr(user, 'resume') or not user.resume.resume_storage_path:
         return "resume_missing"
         
     if len(file_ids) > wallet.balance:
@@ -251,13 +270,21 @@ def process_album_batch(chat_id, file_ids):
     queued_ids = []
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     
+    from utils.storage import upload_temp_file, get_public_url
+    
     for f_id in file_ids:
         r1 = requests.get(f"https://api.telegram.org/bot{token}/getFile?file_id={f_id}").json()
         file_path = r1['result']['file_path']
         r2 = requests.get(f"https://api.telegram.org/file/bot{token}/{file_path}")
         
         job = ProcessingJob.objects.create(user=user, status='PROCESSING')
-        job.screenshot.save(f"tg_job_bulk_{job.id}.jpg", ContentFile(r2.content))
+        wrapped_file = ContentFile(r2.content, name=f"tg_job_bulk_{job.id}.jpg")
+        
+        storage_path = upload_temp_file(wrapped_file, user.id)
+        public_url = get_public_url(storage_path)
+        
+        job.screenshot_storage_path = storage_path
+        job.screenshot_public_url = public_url
         job.status = 'PENDING'
         job.save()
         queued_ids.append(str(job.id))
