@@ -83,6 +83,7 @@ async def handle_media_ingestion(update: Update, context: ContextTypes.DEFAULT_T
             
             resume.resume_storage_path = storage_path
             resume.resume_public_url = public_url
+            resume.original_filename = doc.file_name
             resume.save()
             
             from apps.core.engine import extract_text_from_pdf

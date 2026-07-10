@@ -224,6 +224,7 @@ def process_single_media(chat_id, file_bytes, file_name, is_pdf):
             
             resume.resume_storage_path = storage_path
             resume.resume_public_url = public_url
+            resume.original_filename = file_name
             resume.save()
             
             from apps.core.engine import extract_text_from_pdf
