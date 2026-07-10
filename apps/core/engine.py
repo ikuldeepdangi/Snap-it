@@ -25,8 +25,16 @@ def extract_text_from_pdf(resume_instance: Resume) -> str:
     """
     Reads and concatenates text from all PDF pages, then saves it to the model.
     """
+    if not resume_instance.resume_storage_path:
+        print("Resume storage path is empty.")
+        return ""
+
+    temp_path = None
     try:
-        reader = PdfReader(resume_instance.file.path)
+        from utils.storage import download_to_temp
+        temp_path = download_to_temp(resume_instance.resume_storage_path)
+        
+        reader = PdfReader(temp_path)
         text = []
         for page in reader.pages:
             extracted = page.extract_text()
@@ -40,6 +48,14 @@ def extract_text_from_pdf(resume_instance: Resume) -> str:
     except Exception as e:
         print(f"Error extracting text from PDF: {e}")
         return ""
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+                print(f"Cleaned up temporary file: {temp_path}")
+            except Exception as e:
+                print(f"Failed to delete temp file {temp_path}: {e}")
+
 
 def get_genai_client():
     api_key = os.getenv("GEMINI_API_KEY")

@@ -79,72 +79,87 @@ class Command(BaseCommand):
                 
             self.stdout.write(f"Picked up Job {job.id} for {job.user.email}")
             
+            screenshot_path = None
+            resume_file_path = None
             try:
-                # 2. Process job
-                if not hasattr(job.user, 'resume') or not job.user.resume.file:
-                    raise ValueError("User has no active resume.")
-                
-                resume_text = job.user.resume.extracted_text or ""
-                screenshot_path = job.screenshot.path
-                self.stdout.write(self.style.SUCCESS(f"[Step 1] Got active resume for {job.user.email} and saved screenshot {screenshot_path}"))
-                
-                # Use Gemini
-                self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing AI Image OCR using Gemini..."))
-                
-                profile = getattr(job.user, 'profile', None)
-                prompt_template = profile.get_email_prompt() if profile else None
-                
-                result = analyze_screenshot_with_gemini(screenshot_path, resume_text, prompt_template=prompt_template)
-                
-                if "error" in result:
-                    raise ValueError(f"Gemini AI Error: {result['error']}")
-                
-                job.result_data = result
-                self.stdout.write(self.style.SUCCESS(f"[Step 3] AI processing complete. Generated draft to: {result.get('company')} - {result.get('role')}"))
-                
-                # 3. Dispatch Email via Gmail API
-                if not profile:
-                    raise ValueError("User has no linked Google profile.")
+                try:
+                    # 2. Process job
+                    if not hasattr(job.user, 'resume') or not job.user.resume.resume_storage_path:
+                        raise ValueError("User has no active resume.")
                     
-                from django.utils import timezone
-                from datetime import timedelta
-                from apps.authentication.services import refresh_access_token
-                
-                # Refresh token if expiring within 5 minutes
-                if profile.token_expiry and profile.token_expiry <= timezone.now() + timedelta(minutes=5):
-                    if profile.google_refresh_token:
-                        self.stdout.write(self.style.WARNING(f"Token expired for {job.user.email}, refreshing..."))
-                        try:
-                            new_tokens = refresh_access_token(profile.google_refresh_token)
-                            profile.google_access_token = new_tokens['access_token']
-                            profile.token_expiry = timezone.now() + timedelta(seconds=new_tokens.get('expires_in', 3600))
-                            profile.save()
-                            self.stdout.write(self.style.SUCCESS(f"Successfully refreshed token for {job.user.email}"))
-                        except Exception as e:
-                            raise ValueError(f"Failed to refresh Google token: {e}")
-                    else:
-                        raise ValueError("Token expired and no refresh token available.")
+                    resume_text = job.user.resume.extracted_text or ""
                     
-                target_email = result.get('hr_email')
-                if not target_email:
-                    result['hr_email'] = job.user.email
-                    self.stdout.write(self.style.WARNING(f"No HR email found, drafting to user {job.user.email} instead."))
-                
-                resume_file_path = job.user.resume.file.path
-                
-                # 4. Deduct credit safely before hitting Gmail API
-                if not deduct_credit_atomically(job.user.id, amount=1, description=f'Processed queue job {job.id}'):
-                    raise ValueError("Insufficient credit balance during final processing step. Job aborted to prevent unpaid usage.")
+                    from utils.storage import download_to_temp
+                    self.stdout.write(f"Downloading files from storage...")
+                    screenshot_path = download_to_temp(job.screenshot_storage_path)
+                    resume_file_path = download_to_temp(job.user.resume.resume_storage_path)
                     
-                self.stdout.write(self.style.SUCCESS(f"[Step 4] Credit reserved. Dispatching email to {result['hr_email']} via Gmail..."))
-                if not send_user_email(profile, result, resume_file_path):
-                    # Optional: Add refund logic here if Gmail explicitly returns False, but exception is raised below anyway
-                    raise ValueError("Failed to dispatch email via Gmail API.")
-                self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent."))
-                
-                job.status = 'COMPLETED'
-                job.save()
-                self.stdout.write(self.style.SUCCESS(f"[Step 6] Job {job.id} COMPLETED successfully."))
+                    self.stdout.write(self.style.SUCCESS(f"[Step 1] Got active resume for {job.user.email} and saved screenshot {screenshot_path}"))
+                    
+                    # Use Gemini
+                    self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing AI Image OCR using Gemini..."))
+                    
+                    profile = getattr(job.user, 'profile', None)
+                    prompt_template = profile.get_email_prompt() if profile else None
+                    
+                    result = analyze_screenshot_with_gemini(screenshot_path, resume_text, prompt_template=prompt_template)
+                    
+                    if "error" in result:
+                        raise ValueError(f"Gemini AI Error: {result['error']}")
+                    
+                    job.result_data = result
+                    self.stdout.write(self.style.SUCCESS(f"[Step 3] AI processing complete. Generated draft to: {result.get('company')} - {result.get('role')}"))
+                    
+                    # 3. Dispatch Email via Gmail API
+                    if not profile:
+                        raise ValueError("User has no linked Google profile.")
+                        
+                    from django.utils import timezone
+                    from datetime import timedelta
+                    from apps.authentication.services import refresh_access_token
+                    
+                    # Refresh token if expiring within 5 minutes
+                    if profile.token_expiry and profile.token_expiry <= timezone.now() + timedelta(minutes=5):
+                        if profile.google_refresh_token:
+                            self.stdout.write(self.style.WARNING(f"Token expired for {job.user.email}, refreshing..."))
+                            try:
+                                new_tokens = refresh_access_token(profile.google_refresh_token)
+                                profile.google_access_token = new_tokens['access_token']
+                                profile.token_expiry = timezone.now() + timedelta(seconds=new_tokens.get('expires_in', 3600))
+                                profile.save()
+                                self.stdout.write(self.style.SUCCESS(f"Successfully refreshed token for {job.user.email}"))
+                            except Exception as e:
+                                raise ValueError(f"Failed to refresh Google token: {e}")
+                        else:
+                            raise ValueError("Token expired and no refresh token available.")
+                        
+                    target_email = result.get('hr_email')
+                    if not target_email:
+                        result['hr_email'] = job.user.email
+                        self.stdout.write(self.style.WARNING(f"No HR email found, drafting to user {job.user.email} instead."))
+                    
+                    # 4. Deduct credit safely before hitting Gmail API
+                    if not deduct_credit_atomically(job.user.id, amount=1, description=f'Processed queue job {job.id}'):
+                        raise ValueError("Insufficient credit balance during final processing step. Job aborted to prevent unpaid usage.")
+                        
+                    self.stdout.write(self.style.SUCCESS(f"[Step 4] Credit reserved. Dispatching email to {result['hr_email']} via Gmail..."))
+                    if not send_user_email(profile, result, resume_file_path):
+                        # Optional: Add refund logic here if Gmail explicitly returns False, but exception is raised below anyway
+                        raise ValueError("Failed to dispatch email via Gmail API.")
+                    self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent."))
+                    
+                    job.status = 'COMPLETED'
+                    job.save()
+                    self.stdout.write(self.style.SUCCESS(f"[Step 6] Job {job.id} COMPLETED successfully."))
+                finally:
+                    import os
+                    for temp_file in [screenshot_path, resume_file_path]:
+                        if temp_file and os.path.exists(temp_file):
+                            try:
+                                os.remove(temp_file)
+                                self.stdout.write(self.style.SUCCESS(f"Cleaned up temporary file: {temp_file}"))
+                            except Exception as clean_e:
+                                self.stderr.write(self.style.ERROR(f"Failed to delete temp file {temp_file}: {clean_e}"))
                 
                 from apps.core.engine import send_async_telegram_alert
                 if hasattr(job.user, 'telegram_profile') and job.user.telegram_profile.is_verified:

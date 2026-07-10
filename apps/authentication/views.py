@@ -92,18 +92,45 @@ def dashboard_view(request):
     if request.method == 'POST' and request.FILES.get('resume_file'):
         file = request.FILES['resume_file']
         
-        # Get or create resume, and replace file if it exists
-        resume, created = Resume.objects.get_or_create(user=request.user)
-        if resume.file:
-            resume.file.delete(save=False) # Delete old file
-        resume.file = file
-        resume.save()
+        import config
+        from utils.storage import get_file_extension, upload_resume, get_public_url, delete_file
         
-        # Extract text
-        extract_text_from_pdf(resume)
-        return redirect('dashboard')
+        # Validate file size
+        if file.size > config.MAX_CONTENT_LENGTH:
+            from django.contrib import messages
+            messages.error(request, f"File size exceeds the maximum limit of {config.MAX_CONTENT_LENGTH // (1024*1024)} MB.")
+            return redirect('dashboard')
+            
+        # Validate extension
+        ext = get_file_extension(file.name).lstrip('.')
+        if ext not in config.ALLOWED_EXTENSIONS:
+            from django.contrib import messages
+            messages.error(request, f"Unsupported file type. Allowed formats: {', '.join(config.ALLOWED_EXTENSIONS)}")
+            return redirect('dashboard')
+            
+        try:
+            # Upload using storage helper
+            storage_path = upload_resume(file, request.user.id)
+            public_url = get_public_url(storage_path)
+            
+            # Get or create resume, and replace file if it exists
+            resume, created = Resume.objects.get_or_create(user=request.user)
+            if resume.resume_storage_path:
+                delete_file(resume.resume_storage_path) # Delete old file from storage
+                
+            resume.resume_storage_path = storage_path
+            resume.resume_public_url = public_url
+            resume.save()
+            
+            # Extract text
+            extract_text_from_pdf(resume)
+            return redirect('dashboard')
+        except Exception as e:
+            from django.contrib import messages
+            messages.error(request, f"Failed to upload resume: {str(e)}")
+            return redirect('dashboard')
         
-    has_resume = hasattr(request.user, 'resume')
+    has_resume = hasattr(request.user, 'resume') and bool(request.user.resume.resume_storage_path)
     resume = request.user.resume if has_resume else None
     profile = getattr(request.user, 'profile', None)
     
