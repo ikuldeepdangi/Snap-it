@@ -120,6 +120,7 @@ def dashboard_view(request):
                 
             resume.resume_storage_path = storage_path
             resume.resume_public_url = public_url
+            resume.original_filename = file.name
             resume.save()
             
             # Extract text
