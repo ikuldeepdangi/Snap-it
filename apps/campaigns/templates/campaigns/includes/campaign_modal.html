@@ -1,0 +1,101 @@
+<!-- ==========================================
+     MODAL: Create New Campaign
+=========================================== -->
+<div id="campaign-modal" class="fixed inset-0 z-[150] hidden items-center justify-center">
+    <!-- Backdrop -->
+    <div id="modal-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0" onclick="closeModal()"></div>
+    
+    <!-- Modal Content -->
+    <div id="modal-content" class="relative w-full max-w-[500px] bg-[#111318] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="flex-none p-5 border-b border-white/5 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="ph-fill ph-sparkle text-[#4F8CFF]"></i> Create AI Campaign
+            </h2>
+            <button onclick="closeModal()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+        
+        <!-- Body (Scrollable) -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+            <form id="campaign-form" class="space-y-4">
+                {% csrf_token %}
+                
+                <div class="relative">
+                    <input type="text" id="campaign_name" name="campaign_name" class="peer w-full bg-[#0A0A0B] border border-white/10 rounded-xl px-4 pt-5 pb-2 text-white text-sm placeholder-transparent focus:outline-none focus:ring-1 focus:ring-[#4F8CFF]/50 focus:border-[#4F8CFF] transition-all" placeholder="Campaign Name">
+                    <label for="campaign_name" class="absolute left-4 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Campaign Name (Optional)</label>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="relative col-span-2 sm:col-span-1">
+                        <i class="ph-fill ph-map-pin absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+                        <input type="text" id="city" name="city" required class="peer w-full bg-[#0A0A0B] border border-white/10 rounded-xl pl-9 pr-4 pt-5 pb-2 text-white text-sm placeholder-transparent focus:outline-none focus:ring-1 focus:ring-[#4F8CFF]/50 focus:border-[#4F8CFF] transition-all" placeholder="City">
+                        <label for="city" class="absolute left-9 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Target City</label>
+                    </div>
+                    <div class="relative col-span-2 sm:col-span-1">
+                        <i class="ph-fill ph-code absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+                        <input type="text" id="tech" name="tech" required class="peer w-full bg-[#0A0A0B] border border-white/10 rounded-xl pl-9 pr-4 pt-5 pb-2 text-white text-sm placeholder-transparent focus:outline-none focus:ring-1 focus:ring-[#4F8CFF]/50 focus:border-[#4F8CFF] transition-all" placeholder="Tech">
+                        <label for="tech" class="absolute left-9 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Tech Stack</label>
+                    </div>
+                    <div class="relative col-span-2 sm:col-span-1">
+                        <i class="ph-fill ph-star absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+                        <input type="text" id="experience" name="experience" required class="peer w-full bg-[#0A0A0B] border border-white/10 rounded-xl pl-9 pr-4 pt-5 pb-2 text-white text-sm placeholder-transparent focus:outline-none focus:ring-1 focus:ring-[#4F8CFF]/50 focus:border-[#4F8CFF] transition-all" placeholder="Exp">
+                        <label for="experience" class="absolute left-9 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Experience</label>
+                    </div>
+                    <div class="relative col-span-2 sm:col-span-1">
+                        <i class="ph-fill ph-currency-inr absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+                        <input type="text" id="salary" name="salary" required class="peer w-full bg-[#0A0A0B] border border-white/10 rounded-xl pl-9 pr-4 pt-5 pb-2 text-white text-sm placeholder-transparent focus:outline-none focus:ring-1 focus:ring-[#4F8CFF]/50 focus:border-[#4F8CFF] transition-all" placeholder="Salary">
+                        <label for="salary" class="absolute left-9 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Salary (LPA)</label>
+                    </div>
+                    <div class="relative col-span-2 sm:col-span-1">
+                        <i class="ph-fill ph-target absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+                        <input type="number" id="max_companies" name="max_companies" required min="1" max="50" value="10" class="peer w-full bg-[#0A0A0B] border border-white/10 rounded-xl pl-9 pr-4 pt-5 pb-2 text-white text-sm placeholder-transparent focus:outline-none focus:ring-1 focus:ring-[#4F8CFF]/50 focus:border-[#4F8CFF] transition-all" placeholder="Vol">
+                        <label for="max_companies" class="absolute left-9 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Target Volume</label>
+                    </div>
+                    
+                    <!-- Search Mode Toggle -->
+                    <div class="col-span-2 sm:col-span-1 bg-[#0A0A0B] border border-white/10 rounded-xl px-3 flex items-center justify-between cursor-pointer" onclick="document.getElementById('grounding-toggle').click()">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-semibold text-zinc-500 uppercase flex items-center gap-1"><i class="ph-fill ph-magnifying-glass"></i> Search Mode</span>
+                            <span class="text-xs text-white font-medium mt-0.5" id="mode-text">Cached (Fast)</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer pointer-events-none">
+                            <input type="checkbox" name="use_grounding" id="grounding-toggle" value="true" class="sr-only peer">
+                            <div class="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-300 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#4F8CFF]"></div>
+                        </label>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Dynamic Status / Progress inside modal -->
+            <div id="modal-status-container" class="hidden mt-6 bg-[#0A0A0B] border border-white/5 rounded-xl p-4">
+                <h4 class="text-sm font-bold text-white mb-3" id="modal-status-title">Generating Campaign</h4>
+                <div class="space-y-2 text-xs font-medium" id="modal-status-steps">
+                    <div class="flex items-center gap-2 text-zinc-500"><i class="ph-bold ph-circle"></i> Analyzing constraints</div>
+                    <div class="flex items-center gap-2 text-zinc-500"><i class="ph-bold ph-circle"></i> Finding companies</div>
+                    <div class="flex items-center gap-2 text-zinc-500"><i class="ph-bold ph-circle"></i> Identifying HR contacts</div>
+                    <div class="flex items-center gap-2 text-zinc-500"><i class="ph-bold ph-circle"></i> Creating batch payload</div>
+                </div>
+                <div class="mt-4 h-1 bg-zinc-800 rounded-full overflow-hidden hidden" id="modal-progress-bar">
+                    <div class="h-full bg-[#4F8CFF] w-1/2 animate-[slide-right_2s_infinite]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex-none p-4 sm:p-5 border-t border-white/5 bg-white/[0.02] flex flex-col sm:flex-row items-center justify-between gap-4 rounded-b-2xl">
+            <div class="text-[11px] text-zinc-500 font-semibold flex items-center gap-1.5 self-start sm:self-auto">
+                <i class="ph-fill ph-lightning text-amber-400"></i> <span class="whitespace-nowrap">Est. Credits:</span> <span class="text-white font-bold" id="est-credits">10</span>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <button type="button" onclick="closeModal()" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-bold text-zinc-400 hover:bg-white/5 hover:text-white rounded-lg transition-colors">Cancel</button>
+                <button type="submit" form="campaign-form" id="submit-btn" class="w-full sm:w-auto bg-gradient-to-r from-[#4F8CFF] to-blue-600 hover:from-blue-500 hover:to-indigo-600 text-white font-bold py-2.5 sm:py-2 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(79,140,255,0.3)] hover:shadow-[0_0_25px_rgba(79,140,255,0.5)]">
+                    <span id="btn-text" class="whitespace-nowrap">✨ Generate AI Targets →</span>
+                    <i id="loading-spinner" class="ph-bold ph-spinner-gap animate-spin hidden"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

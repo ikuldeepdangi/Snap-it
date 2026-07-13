@@ -1,0 +1,296 @@
+<!-- Custom Toast -->
+<div id="custom-toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#161A22] text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 opacity-0 translate-y-10 z-[200] font-medium border border-white/10">
+    <div class="w-8 h-8 rounded-full bg-[#4F8CFF]/20 flex items-center justify-center">
+        <i class="ph-fill ph-info text-[#4F8CFF]"></i>
+    </div>
+    <span id="toast-msg" class="text-sm"></span>
+</div>
+
+<style>
+@keyframes slide-right {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+}
+</style>
+
+<script>
+function showToast(message) {
+    const toast = document.getElementById('custom-toast');
+    document.getElementById('toast-msg').textContent = message;
+    toast.classList.remove('opacity-0', 'translate-y-10');
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-10');
+    }, 3000);
+}
+
+// Intercept grounding toggle
+document.getElementById('grounding-toggle').addEventListener('change', function(e) {
+    const modeText = document.getElementById('mode-text');
+    if (this.checked) {
+        e.preventDefault();
+        this.checked = false;
+        showToast("Live Google Grounding requires a Pro upgrade. Using Cached mode.");
+    }
+});
+
+// Modal Logic
+function openModal() {
+    const modal = document.getElementById('campaign-modal');
+    const backdrop = document.getElementById('modal-backdrop');
+    const content = document.getElementById('modal-content');
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeModal() {
+    const backdrop = document.getElementById('modal-backdrop');
+    const content = document.getElementById('modal-content');
+    
+    backdrop.classList.add('opacity-0');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+        document.getElementById('campaign-modal').classList.add('hidden');
+        document.getElementById('campaign-modal').classList.remove('flex');
+    }, 300);
+}
+
+// Volume input to update estimated credits (1 target = 1 credit)
+document.getElementById('max_companies').addEventListener('input', function(e) {
+    const val = parseInt(this.value) || 0;
+    document.getElementById('est-credits').textContent = val;
+});
+
+// Drawer logic
+function openCampaignDetails(name, domain, status, hrEmail, tech, founder, engLead, seniorDev, location, evidenceHr, evidenceCc, failureReason) {
+    document.getElementById('d-company').textContent = name || 'Unknown';
+    document.getElementById('d-logo-letter').textContent = (name || 'U').charAt(0).toUpperCase();
+    document.getElementById('d-domain-text').textContent = domain;
+    document.getElementById('d-domain').href = 'https://' + domain;
+    document.getElementById('d-tech').textContent = tech;
+    
+    const statusEl = document.getElementById('d-status');
+    statusEl.innerHTML = `<span>${status}</span>`;
+    statusEl.className = "px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1 ";
+    if (status === 'PENDING') statusEl.className += 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20';
+    else if (status === 'SENT') statusEl.className += 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20';
+    else if (status === 'PROCESSING') statusEl.className += 'bg-[#4F8CFF]/10 text-[#4F8CFF] border border-[#4F8CFF]/20';
+    else statusEl.className += 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20';
+
+    document.getElementById('d-hr-email').textContent = hrEmail || 'Not found';
+    document.getElementById('d-founder').textContent = founder && founder !== 'None' ? founder : '—';
+    document.getElementById('d-eng-lead').textContent = engLead && engLead !== 'None' ? engLead : '—';
+    document.getElementById('d-location').innerHTML = `<i class="ph-fill ph-map-pin"></i> ${location && location !== 'None' ? location : 'Remote / Unknown'}`;
+
+    const evHr = document.getElementById('d-evidence-hr');
+    if (evidenceHr && evidenceHr !== 'None' && evidenceHr !== '') {
+        evHr.href = evidenceHr;
+        evHr.classList.remove('hidden');
+    } else {
+        evHr.classList.add('hidden');
+    }
+
+    const failBox = document.getElementById('d-failure-box');
+    if (failureReason && failureReason !== 'None' && failureReason !== '') {
+        document.getElementById('d-failure-reason').textContent = failureReason;
+        failBox.classList.remove('hidden');
+    } else {
+        failBox.classList.add('hidden');
+    }
+
+    const drawer = document.getElementById('campaign-drawer');
+    const backdrop = document.getElementById('drawer-backdrop');
+    const panel = document.getElementById('drawer-panel');
+    
+    drawer.classList.remove('hidden');
+    setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        panel.classList.remove('translate-x-full');
+    }, 10);
+}
+
+function closeDrawer() {
+    const backdrop = document.getElementById('drawer-backdrop');
+    const panel = document.getElementById('drawer-panel');
+    
+    backdrop.classList.add('opacity-0');
+    panel.classList.add('translate-x-full');
+    
+    setTimeout(() => {
+        document.getElementById('campaign-drawer').classList.add('hidden');
+    }, 300);
+}
+
+function toggleBatch(batchId) {
+    const container = document.getElementById(batchId);
+    const icon = document.getElementById(`icon-${batchId}`);
+    const text = document.getElementById(`text-${batchId}`);
+    const iconMob = document.getElementById(`icon-mob-${batchId}`);
+    const textMob = document.getElementById(`text-mob-${batchId}`);
+    
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        if(icon) icon.classList.add('rotate-180');
+        if(text) text.textContent = 'Hide';
+        if(iconMob) iconMob.classList.add('rotate-180');
+        if(textMob) textMob.textContent = 'Hide';
+    } else {
+        container.classList.add('hidden');
+        if(icon) icon.classList.remove('rotate-180');
+        if(text) text.textContent = 'View';
+        if(iconMob) iconMob.classList.remove('rotate-180');
+        if(textMob) textMob.textContent = 'View';
+    }
+}
+
+// Form submit with animated modal steps
+document.getElementById('campaign-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const spinner = document.getElementById('loading-spinner');
+    
+    const statusContainer = document.getElementById('modal-status-container');
+    const statusSteps = document.getElementById('modal-status-steps');
+    const progressBar = document.getElementById('modal-progress-bar');
+    
+    // Capture form data BEFORE disabling inputs
+    const formData = new FormData(this);
+    
+    // Disable inputs
+    Array.from(this.elements).forEach(el => el.disabled = true);
+    
+    btn.classList.add('opacity-80', 'cursor-not-allowed');
+    spinner.classList.remove('hidden');
+    btnText.textContent = "Processing...";
+    
+    statusContainer.classList.remove('hidden');
+    progressBar.classList.remove('hidden');
+    
+    // Simulate steps for UX
+    const steps = statusSteps.children;
+    let currentStep = 0;
+    const interval = setInterval(() => {
+        if(currentStep < steps.length) {
+            steps[currentStep].innerHTML = `<i class="ph-fill ph-check-circle text-[#22C55E]"></i> <span class="text-white">${steps[currentStep].textContent}</span>`;
+            currentStep++;
+        }
+    }, 1200);
+
+    try {
+        const response = await fetch('{% url "campaigns:generate" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        clearInterval(interval);
+        for(let i=0; i<steps.length; i++){
+            steps[i].innerHTML = `<i class="ph-fill ph-check-circle text-[#22C55E]"></i> <span class="text-white">${steps[i].textContent}</span>`;
+        }
+        
+        const data = await response.json();
+        if (response.ok) {
+            document.getElementById('modal-status-title').innerHTML = `<span class="text-[#22C55E]">✓ Success: ${data.count} targets queued</span>`;
+            setTimeout(() => { window.location.reload(); }, 1000);
+        } else {
+            throw new Error(data.error || 'Generation failed');
+        }
+    } catch (error) {
+        clearInterval(interval);
+        document.getElementById('modal-status-title').innerHTML = `<span class="text-[#EF4444]">Error: ${error.message}</span>`;
+        progressBar.classList.add('hidden');
+        Array.from(this.elements).forEach(el => el.disabled = false);
+        btn.classList.remove('opacity-80', 'cursor-not-allowed');
+        spinner.classList.add('hidden');
+        btnText.textContent = 'Retry Generation';
+    }
+});
+
+// Search functionality
+document.getElementById('campaign-search').addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase();
+    const batches = document.querySelectorAll('.campaign-batch-row');
+    
+    batches.forEach(batch => {
+        const text = batch.textContent.toLowerCase();
+        if (text.includes(term)) {
+            batch.style.display = '';
+        } else {
+            batch.style.display = 'none';
+        }
+    });
+});
+
+// Auto-polling for real-time status updates
+let pollingInterval;
+
+function startPolling() {
+    pollingInterval = setInterval(async () => {
+        try {
+            const response = await fetch(window.location.href, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const text = await response.text();
+            
+            // Parse HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            
+            // Update Stats
+            const newStats = doc.getElementById('stats-row');
+            if(newStats) {
+                document.getElementById('stats-row').innerHTML = newStats.innerHTML;
+            }
+            
+            // Capture currently open accordions
+            let openAccordions = [];
+            document.querySelectorAll('[id^="batch_"]').forEach(el => {
+                if(!el.classList.contains('hidden')) openAccordions.push(el.id);
+            });
+            
+            // Update List Body
+            const newList = doc.getElementById('campaign-list-body');
+            if(newList) {
+                // Apply open states to the new DOM before swapping
+                openAccordions.forEach(id => {
+                    const newEl = doc.getElementById(id);
+                    if(newEl) {
+                        newEl.classList.remove('hidden');
+                        const icon = doc.getElementById(`icon-${id}`);
+                        const text = doc.getElementById(`text-${id}`);
+                        const iconMob = doc.getElementById(`icon-mob-${id}`);
+                        const textMob = doc.getElementById(`text-mob-${id}`);
+                        
+                        if(icon) icon.classList.add('rotate-180');
+                        if(text) text.textContent = 'Hide';
+                        if(iconMob) iconMob.classList.add('rotate-180');
+                        if(textMob) textMob.textContent = 'Hide';
+                    }
+                });
+                
+                document.getElementById('campaign-list-body').innerHTML = newList.innerHTML;
+            }
+            
+        } catch (e) {
+            console.error('Polling failed', e);
+        }
+    }, 5000); // Poll every 5 seconds for snappier updates
+}
+
+// Start polling on load
+document.addEventListener('DOMContentLoaded', () => {
+    startPolling();
+});
+</script>

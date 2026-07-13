@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'apps.queue_manager',
     'apps.core',
     'apps.bot',
+    'apps.campaigns',
 ]
 
 MIDDLEWARE = [
