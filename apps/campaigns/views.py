@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from .models import TargetCompanyCampaign, Campaign
+from .models import Company, Campaign
 from .services import CampaignGeneratorService
 
 @login_required
@@ -19,8 +19,8 @@ def campaign_dashboard(request):
         targets = campaign.targets.all()
         
         c_total = targets.count()
-        c_pending = targets.filter(campaign_status='PENDING').count()
-        c_sent = targets.filter(campaign_status='SENT').count()
+        c_pending = targets.filter(campaign_status__in=['PENDING', 'SEARCHING', 'VERIFYING']).count()
+        c_sent = targets.filter(campaign_status__in=['SENT', 'COMPLETED']).count()
         c_failed = targets.filter(campaign_status='FAILED').count()
         
         total_companies += c_total
@@ -29,7 +29,7 @@ def campaign_dashboard(request):
         total_pending += c_pending
         
         # We need a fallback tech if campaign_inputs is somehow null
-        tech = campaign.campaign_inputs.get('tech', 'Tech') if campaign.campaign_inputs else 'Tech'
+        tech = campaign.tech or 'Tech'
         
         formatted_batches.append({
             'id': f'batch_{campaign.id}',
@@ -41,7 +41,7 @@ def campaign_dashboard(request):
             'sent': c_sent,
             'failed': c_failed,
             'targets': targets,
-            'campaign_name': campaign.campaign_name or f"{tech} Hiring"
+            'campaign_name': campaign.name or f"{tech} Hiring"
         })
         
     success_rate = round((total_sent / total_companies) * 100) if total_companies else 0
@@ -69,20 +69,11 @@ def generate_campaign_api(request):
             campaign_name = request.POST.get('campaign_name')
             max_companies_str = request.POST.get('max_companies')
             max_companies = int(max_companies_str) if max_companies_str else 10
-            use_grounding = request.POST.get('use_grounding') == 'true'
+            additional_notes = request.POST.get('additional_notes', '')
 
             if not all([city, tech, salary, experience]):
                 return JsonResponse({'error': 'Missing required fields.'}, status=400)
                 
-            campaign_inputs = {
-                'city': city,
-                'tech': tech,
-                'salary': salary,
-                'experience': experience,
-                'max_companies': max_companies,
-                'use_grounding': use_grounding
-            }
-
             service = CampaignGeneratorService()
             results = service.generate_targets(
                 target_city=city,
@@ -90,10 +81,10 @@ def generate_campaign_api(request):
                 salary_threshold=salary,
                 experience_tier=experience,
                 max_companies=max_companies,
-                use_grounding=use_grounding,
+                use_grounding=True,
                 user=request.user,
                 campaign_name=campaign_name,
-                campaign_inputs=campaign_inputs
+                additional_notes=additional_notes
             )
             return JsonResponse({'success': True, 'count': len(results)})
         except ValueError as e:

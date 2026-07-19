@@ -1,0 +1,139 @@
+{
+    "active_listings": [
+        {
+            "company_name": "Rentokil PCI",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Python Django Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "Django",
+                "Web Development"
+            ],
+            "hr_or_hiring_email": "alfeeya.siddiqui@rentokil-pci.com"
+        },
+        {
+            "company_name": "Planet Odoo",
+            "tech_park_or_location": "Kanchpada, Malad West, Mumbai",
+            "role_designation": "Python Developer",
+            "experience_required": "1 to 4 Years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "HTML",
+                "C#",
+                "ASP.NET",
+                "Angular"
+            ],
+            "hr_or_hiring_email": "careers@planetodoo.com"
+        },
+        {
+            "company_name": "Cere Labs",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Software Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "Redis",
+                "neo4j",
+                "Docker",
+                "Kubernetes"
+            ],
+            "hr_or_hiring_email": "careers@cerelabs.com"
+        },
+        {
+            "company_name": "Bell Technology",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Back End Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "FastAPI",
+                "Microservices"
+            ],
+            "hr_or_hiring_email": "hr@belltechnology.com"
+        },
+        {
+            "company_name": "KPMG India Services LLP",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Python Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "SQL",
+                "Django"
+            ],
+            "hr_or_hiring_email": "careers.india@kpmg.com"
+        },
+        {
+            "company_name": "Rentokil Initial Hygiene India Private Limited",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Python Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "FastAPI",
+                "SQL"
+            ],
+            "hr_or_hiring_email": "careers@rentokil-initial.com"
+        },
+        {
+            "company_name": "BlackRock Services India Pvt Ltd",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Python Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "SQL",
+                "FastAPI"
+            ],
+            "hr_or_hiring_email": "india.recruitment@blackrock.com"
+        },
+        {
+            "company_name": "Applied Materials India Pvt Ltd",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Python Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "Django",
+                "Flask"
+            ],
+            "hr_or_hiring_email": "careers_india@amat.com"
+        },
+        {
+            "company_name": "Nagarro Softwares Pvt. Ltd.",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Python Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "Django",
+                "FastAPI"
+            ],
+            "hr_or_hiring_email": "careers@nagarro.com"
+        },
+        {
+            "company_name": "Cere Labs",
+            "tech_park_or_location": "Mumbai",
+            "role_designation": "Python AI Developer",
+            "experience_required": "2-3 years",
+            "estimated_ctc_lpa": "Not Disclosed",
+            "primary_skills": [
+                "Python",
+                "Artificial Intelligence",
+                "Docker",
+                "Kubernetes"
+            ],
+            "hr_or_hiring_email": "hr@cerelabs.com"
+        }
+    ]
+}

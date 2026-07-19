@@ -69,8 +69,8 @@ class Command(BaseCommand):
                         job.save()
                         is_campaign = False
                     else:
-                        from apps.campaigns.models import TargetCompanyCampaign
-                        job = TargetCompanyCampaign.objects.select_for_update(skip_locked=True).filter(
+                        from apps.campaigns.models import Company
+                        job = Company.objects.select_for_update(skip_locked=True).filter(
                             campaign_status='PENDING'
                         ).order_by('created_at').first()
                         if job:
@@ -97,7 +97,7 @@ class Command(BaseCommand):
                 # Fail campaign job if user is None
                 if is_campaign:
                     job.campaign_status = 'FAILED'
-                    job.failure_reason = "No user associated with this campaign."
+                    job.verification_reason = "No user associated with this campaign."
                     job.save()
                 time.sleep(2)
                 continue
@@ -136,9 +136,9 @@ class Command(BaseCommand):
                         
                         from apps.core.engine import generate_email_draft_from_text
                         result = generate_email_draft_from_text(
-                            company=job.company_name,
-                            role=job.target_tech_stack,
-                            hr_email=job.primary_recipient_hr,
+                            company=job.name,
+                            role=job.campaign.tech if job.campaign else 'Tech Role',
+                            hr_email=job.hr_email,
                             resume_content=resume_text,
                             prompt_template=prompt_template
                         )
@@ -231,7 +231,7 @@ class Command(BaseCommand):
                     job.result_data['worker_error'] = clean_msg
                 else:
                     job.campaign_status = 'FAILED'
-                    job.failure_reason = clean_msg
+                    job.verification_reason = clean_msg
                 job.save()
                 self.stderr.write(self.style.ERROR(f"Job {job.id} FAILED: {error_msg}"))
                 

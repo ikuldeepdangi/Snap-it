@@ -1,8 +1,12 @@
 from django.contrib import admin
-from .models import TargetCompanyCampaign
+from .models import Company, Campaign
 
-@admin.register(TargetCompanyCampaign)
-class TargetCompanyCampaignAdmin(admin.ModelAdmin):
-    list_display = ('company_name', 'root_domain', 'primary_recipient_hr', 'campaign_status', 'created_at')
-    search_fields = ('company_name', 'root_domain', 'primary_recipient_hr', 'target_tech_stack')
-    list_filter = ('campaign_status', 'target_tech_stack')
+@admin.register(Campaign)
+class CampaignAdmin(admin.ModelAdmin):
+    list_display = ('name', 'city', 'tech', 'created_at')
+
+@admin.register(Company)
+class CompanyAdmin(admin.ModelAdmin):
+    list_display = ('name', 'campaign_status', 'is_verified', 'confidence_score', 'ranking', 'created_at')
+    search_fields = ('name', 'website', 'hr_email', 'industry')
+    list_filter = ('campaign_status', 'is_hiring', 'is_verified')

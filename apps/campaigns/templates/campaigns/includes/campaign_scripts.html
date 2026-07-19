@@ -23,15 +23,7 @@ function showToast(message) {
     }, 3000);
 }
 
-// Intercept grounding toggle
-document.getElementById('grounding-toggle').addEventListener('change', function(e) {
-    const modeText = document.getElementById('mode-text');
-    if (this.checked) {
-        e.preventDefault();
-        this.checked = false;
-        showToast("Live Google Grounding requires a Pro upgrade. Using Cached mode.");
-    }
-});
+
 
 // Modal Logic
 function openModal() {
@@ -70,18 +62,22 @@ document.getElementById('max_companies').addEventListener('input', function(e) {
 });
 
 // Drawer logic
-function openCampaignDetails(name, domain, status, hrEmail, tech, founder, engLead, seniorDev, location, evidenceHr, evidenceCc, failureReason) {
+function openCampaignDetails(name, website, status, hrEmail, tech, founder, engLead, recruiter, location, evidenceUrl, unused1, failureReason) {
     document.getElementById('d-company').textContent = name || 'Unknown';
     document.getElementById('d-logo-letter').textContent = (name || 'U').charAt(0).toUpperCase();
-    document.getElementById('d-domain-text').textContent = domain;
-    document.getElementById('d-domain').href = 'https://' + domain;
+    document.getElementById('d-domain-text').textContent = website ? new URL(website).hostname : 'website.com';
+    if(website) {
+        document.getElementById('d-domain').href = website;
+    } else {
+        document.getElementById('d-domain').removeAttribute('href');
+    }
     document.getElementById('d-tech').textContent = tech;
     
     const statusEl = document.getElementById('d-status');
     statusEl.innerHTML = `<span>${status}</span>`;
     statusEl.className = "px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1 ";
-    if (status === 'PENDING') statusEl.className += 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20';
-    else if (status === 'SENT') statusEl.className += 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20';
+    if (status === 'PENDING' || status === 'SEARCHING' || status === 'VERIFYING') statusEl.className += 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20';
+    else if (status === 'SENT' || status === 'COMPLETED') statusEl.className += 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20';
     else if (status === 'PROCESSING') statusEl.className += 'bg-[#4F8CFF]/10 text-[#4F8CFF] border border-[#4F8CFF]/20';
     else statusEl.className += 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20';
 
@@ -91,8 +87,8 @@ function openCampaignDetails(name, domain, status, hrEmail, tech, founder, engLe
     document.getElementById('d-location').innerHTML = `<i class="ph-fill ph-map-pin"></i> ${location && location !== 'None' ? location : 'Remote / Unknown'}`;
 
     const evHr = document.getElementById('d-evidence-hr');
-    if (evidenceHr && evidenceHr !== 'None' && evidenceHr !== '') {
-        evHr.href = evidenceHr;
+    if (evidenceUrl && evidenceUrl !== 'None' && evidenceUrl !== '') {
+        evHr.href = evidenceUrl;
         evHr.classList.remove('hidden');
     } else {
         evHr.classList.add('hidden');
@@ -175,15 +171,17 @@ document.getElementById('campaign-form').addEventListener('submit', async functi
     statusContainer.classList.remove('hidden');
     progressBar.classList.remove('hidden');
     
-    // Simulate steps for UX
+    // Simulate steps for UX (Staggered for realism)
     const steps = statusSteps.children;
-    let currentStep = 0;
-    const interval = setInterval(() => {
-        if(currentStep < steps.length) {
-            steps[currentStep].innerHTML = `<i class="ph-fill ph-check-circle text-[#22C55E]"></i> <span class="text-white">${steps[currentStep].textContent}</span>`;
-            currentStep++;
-        }
-    }, 1200);
+    const stepDelays = [1500, 6000, 14000, 22000]; // Realistic intervals
+    const timeouts = [];
+    
+    for (let i = 0; i < steps.length; i++) {
+        const timeout = setTimeout(() => {
+            steps[i].innerHTML = `<i class="ph-fill ph-check-circle text-[#22C55E]"></i> <span class="text-white">${steps[i].textContent}</span>`;
+        }, stepDelays[i]);
+        timeouts.push(timeout);
+    }
 
     try {
         const response = await fetch('{% url "campaigns:generate" %}', {
@@ -195,7 +193,7 @@ document.getElementById('campaign-form').addEventListener('submit', async functi
             }
         });
         
-        clearInterval(interval);
+        timeouts.forEach(clearTimeout);
         for(let i=0; i<steps.length; i++){
             steps[i].innerHTML = `<i class="ph-fill ph-check-circle text-[#22C55E]"></i> <span class="text-white">${steps[i].textContent}</span>`;
         }
@@ -208,7 +206,7 @@ document.getElementById('campaign-form').addEventListener('submit', async functi
             throw new Error(data.error || 'Generation failed');
         }
     } catch (error) {
-        clearInterval(interval);
+        timeouts.forEach(clearTimeout);
         document.getElementById('modal-status-title').innerHTML = `<span class="text-[#EF4444]">Error: ${error.message}</span>`;
         progressBar.classList.add('hidden');
         Array.from(this.elements).forEach(el => el.disabled = false);

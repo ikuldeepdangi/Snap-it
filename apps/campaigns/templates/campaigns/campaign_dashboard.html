@@ -123,7 +123,7 @@
                                 <p class="text-[10px] sm:text-[11px] text-zinc-500 font-medium mt-0.5 flex items-center gap-1">
                                     <i class="ph-fill ph-map-pin"></i> 
                                     <!-- Get location from first target, mock if empty -->
-                                    {{ batch.targets.0.office_location|default:"India"|truncatechars:15 }} 
+                                    {{ batch.targets.0.location|default:"India"|truncatechars:15 }} 
                                     <span class="hidden sm:inline">&bull; <span class="font-mono text-[9px]">{{ batch.short_id }}</span></span>
                                 </p>
                             </div>
@@ -173,26 +173,30 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {% for campaign in batch.targets %}
                             <div class="bg-[#161A22] border border-white/5 hover:border-[#4F8CFF]/50 rounded-xl p-3 flex items-center justify-between cursor-pointer transition-colors group/target"
-                                onclick="openCampaignDetails('{{ campaign.company_name|escapejs }}', '{{ campaign.root_domain|escapejs }}', '{{ campaign.campaign_status }}', '{{ campaign.primary_recipient_hr|escapejs }}', '{{ campaign.target_tech_stack|escapejs }}', '{{ campaign.cc_founder|default:""|escapejs }}', '{{ campaign.cc_engineering_lead|default:""|escapejs }}', '{{ campaign.cc_senior_dev|default:""|escapejs }}', '{{ campaign.office_location|default:""|escapejs }}', '{{ campaign.evidence_url_hr|default:""|escapejs }}', '{{ campaign.evidence_url_cc|default:""|escapejs }}', '{{ campaign.failure_reason|default:""|escapejs }}')">
+                                onclick="openCampaignDetails('{{ campaign.name|escapejs }}', '{{ campaign.website|escapejs }}', '{{ campaign.campaign_status }}', '{{ campaign.hr_email|escapejs }}', '{{ batch.tech|escapejs }}', '{{ campaign.founder_email|default:""|escapejs }}', '{{ campaign.engineering_email|default:""|escapejs }}', '{{ campaign.recruiter_email|default:""|escapejs }}', '{{ campaign.location|default:""|escapejs }}', '{{ campaign.evidence_url|default:""|escapejs }}', '', '')">
                                 
                                 <div class="flex items-center gap-3 overflow-hidden">
                                     <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-400 group-hover/target:text-[#4F8CFF] transition-colors shrink-0">
-                                        {{ campaign.company_name|make_list|first|upper }}
+                                        {{ campaign.name|make_list|first|upper }}
                                     </div>
                                     <div class="truncate">
-                                        <h4 class="font-bold text-white text-[13px] group-hover/target:text-[#4F8CFF] transition-colors truncate">{{ campaign.company_name }}</h4>
-                                        <p class="text-[10px] text-zinc-500 truncate">{{ campaign.primary_recipient_hr }}</p>
+                                        <h4 class="font-bold text-white text-[13px] group-hover/target:text-[#4F8CFF] transition-colors truncate">{{ campaign.name }}</h4>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            {% if campaign.is_verified %}
+                                            <span class="text-[9px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded border border-emerald-500/20"><i class="ph-bold ph-check"></i> Verified</span>
+                                            {% endif %}
+                                            <span class="text-[10px] text-zinc-500 truncate">{{ campaign.confidence_score }}% Conf</span>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div class="shrink-0 ml-2 flex items-center gap-1.5">
-                                    {% if campaign.campaign_status == 'PENDING' %}<div class="w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" title="Pending"></div>
-                                    {% elif campaign.campaign_status == 'SENT' %}<div class="w-2 h-2 rounded-full bg-[#22C55E]" title="Sent"></div>
-                                    {% elif campaign.campaign_status == 'PROCESSING' %}<i class="ph-bold ph-spinner-gap text-[#4F8CFF] animate-spin" title="Processing"></i>
+                                    {% if campaign.campaign_status == 'PENDING' or campaign.campaign_status == 'SEARCHING' or campaign.campaign_status == 'VERIFYING' %}<div class="w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" title="In Progress"></div>
+                                    {% elif campaign.campaign_status == 'COMPLETED' or campaign.campaign_status == 'SENT' %}<div class="w-2 h-2 rounded-full bg-[#22C55E]" title="Completed"></div>
                                     {% else %}
-                                        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#EF4444]/10 border border-[#EF4444]/20" title="{{ campaign.failure_reason }}">
+                                        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#EF4444]/10 border border-[#EF4444]/20" title="{{ campaign.verification_reason }}">
                                             <div class="w-1.5 h-1.5 rounded-full bg-[#EF4444]"></div>
-                                            <span class="text-[9px] font-bold text-[#EF4444] uppercase tracking-wider max-w-[80px] truncate">{{ campaign.failure_reason|default:"Skipped" }}</span>
+                                            <span class="text-[9px] font-bold text-[#EF4444] uppercase tracking-wider max-w-[80px] truncate">{{ campaign.verification_reason|default:"Failed" }}</span>
                                         </div>
                                     {% endif %}
                                 </div>

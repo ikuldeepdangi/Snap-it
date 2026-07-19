@@ -55,16 +55,10 @@
                         <label for="max_companies" class="absolute left-9 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Target Volume</label>
                     </div>
                     
-                    <!-- Search Mode Toggle -->
-                    <div class="col-span-2 sm:col-span-1 bg-[#0A0A0B] border border-white/10 rounded-xl px-3 flex items-center justify-between cursor-pointer" onclick="document.getElementById('grounding-toggle').click()">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-semibold text-zinc-500 uppercase flex items-center gap-1"><i class="ph-fill ph-magnifying-glass"></i> Search Mode</span>
-                            <span class="text-xs text-white font-medium mt-0.5" id="mode-text">Cached (Fast)</span>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer pointer-events-none">
-                            <input type="checkbox" name="use_grounding" id="grounding-toggle" value="true" class="sr-only peer">
-                            <div class="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-300 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#4F8CFF]"></div>
-                        </label>
+                    <div class="relative col-span-2 sm:col-span-1">
+                        <i class="ph-fill ph-note absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
+                        <input type="text" id="additional_notes" name="additional_notes" class="peer w-full bg-[#0A0A0B] border border-white/10 rounded-xl pl-9 pr-4 pt-5 pb-2 text-white text-sm placeholder-transparent focus:outline-none focus:ring-1 focus:ring-[#4F8CFF]/50 focus:border-[#4F8CFF] transition-all" placeholder="Notes">
+                        <label for="additional_notes" class="absolute left-9 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500 transition-all peer-placeholder-shown:text-xs peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:text-[#4F8CFF] cursor-text">Additional Notes (Optional)</label>
                     </div>
                 </div>
             </form>
