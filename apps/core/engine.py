@@ -58,6 +58,17 @@ def extract_text_from_pdf(resume_instance: Resume) -> str:
 
 
 def get_genai_client():
+    """
+    🚀 OPTIMIZED SPLIT-KEY ARCHITECTURE (Tier 0 / Tier 1 Separation)
+    
+    This function explicitly fetches the standard `GEMINI_API_KEY` (Tier 0 Free Account).
+    It is responsible for powering all token-heavy operations (e.g., OCR on screenshots,
+    reading massive master resumes, and drafting personalized cold emails).
+    
+    By isolating this copywriting phase to the free tier, we completely stop wallet burn 
+    on the prepaid balance. The Tier 1 `GEMINI_API_KEY_PAID` is reserved strictly for 
+    high-value web crawling operations inside the CampaignGeneratorService.
+    """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("Missing GEMINI_API_KEY in .env")

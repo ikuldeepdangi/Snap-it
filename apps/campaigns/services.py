@@ -4,20 +4,15 @@ import logging
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
-from typing import List
+from typing import List, Optional
 from .models import Company, Campaign
 
 logger = logging.getLogger(__name__)
 
 class JobOpening(BaseModel):
-    company_name: str = Field(description="Exact legal or operating name of the hiring entity.")
-    tech_park_location: str = Field(description="The specific IT park, SEZ, or corporate node in the city.")
-    role_designation: str = Field(description="The formal corporate job title.")
-    experience_required: str = Field(description="Required experience interval stated in the live posting.")
-    inferred_ctc_lpa: str = Field(description="Salary range or 'Not Disclosed' explicitly mapped from the post.")
-    core_technical_skills: List[str] = Field(description="List of primary technical stacks mentioned.")
-    hr_or_hiring_email: str = Field(description="Direct corporate recruiter email, talent acquisition alias, or official careers email route. If explicitly missing, set value to 'None Found'.")
-    source_reference_url: str = Field(description="A highly specific search query or job platform route string indicating where this live listing exists.")
+    company_name: str = Field(description="Company name")
+    verified_hr_email: Optional[str] = Field(description="CRITICAL: Direct corporate recruiter, HR, or careers email address. Must search deeply.")
+    source_url: str = Field(description="Source URL of job listing")
 
 class JobSearchPayload(BaseModel):
     active_listings: List[JobOpening]
@@ -52,20 +47,17 @@ class CampaignGeneratorService:
         )
 
         prompt = (
-            f"You are a strict data-extraction engine connected to a live Google Search index. "
-            f"Perform an exhaustive web search for active job vacancies matching the parameters below. "
-            f"CRITICAL: Do not simulate, guess, or synthesize data. Only return actual, active job listings "
-            f"found via web tracking that have been live or active recently.\n\n"
+            f"You are a strict data parser connected to a live Google Search index. "
+            f"Search for active {target_tech} roles in {target_city}. "
+            f"CRITICAL: Do not write conversational prose, notes, or explanations. "
+            f"Only return a raw, compressed JSON block containing exactly three fields: "
+            f"company_name, verified_hr_email (CRITICAL: You MUST find and extract the direct corporate recruiter, talent acquisition, or official careers email address), and source_url. If strictly unavailable, set to null.\n\n"
             f"Search parameters:\n"
-            f"- Core Role/Tech: {target_tech}\n"
-            f"- Geography: {target_city} (Focus strictly on tech parks if applicable)\n"
             f"- Target CTC Constraint: {salary_threshold}\n"
             f"- Experience Bracket: {experience_tier}\n"
             f"- Number of listings to find: At least {max_companies}\n"
             f"- Additional Search Constraints: {additional_notes if additional_notes else 'None'}\n"
             f"{exclusions_text}\n"
-            f"For every single listing, extract their corporate talent acquisition or direct career contact email address. "
-            f"If the email cannot be found on the public job posting page, output 'None Found' for that field."
         )
 
         logger.info(f"Querying Gemini API (using {self.model_name}), use_grounding={use_grounding}...")
@@ -124,24 +116,20 @@ class CampaignGeneratorService:
                 if company_name.lower() in existing_lower:
                     continue
                     
-                hr_email = listing.get('hr_or_hiring_email')
-                if hr_email and hr_email.lower() == 'none found':
-                    hr_email = None
-
-                tech_skills = ", ".join(listing.get('core_technical_skills', []))
+                hr_email = listing.get('verified_hr_email')
                 
                 campaign_obj = Company.objects.create(
                     campaign=new_campaign,
                     name=company_name,
-                    website=listing.get('source_reference_url'),
+                    website=listing.get('source_url'),
                     hr_email=hr_email,
-                    location=f"{target_city} - {listing.get('tech_park_location', '')}",
-                    evidence_url=listing.get('source_reference_url'),
+                    location=target_city,
+                    evidence_url=listing.get('source_url'),
                     campaign_status='PENDING',
                     confidence_score=100, 
                     tech_score=100, 
                     is_hiring=True,
-                    verification_reason=f"Role: {listing.get('role_designation')}, CTC: {listing.get('inferred_ctc_lpa')}, Exp: {listing.get('experience_required')}, Tech: {tech_skills}",
+                    verification_reason=f"Matched: {target_tech} role in {target_city}",
                     is_verified=True
                 )
                 saved_objects.append(campaign_obj)

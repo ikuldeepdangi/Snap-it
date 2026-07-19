@@ -174,9 +174,8 @@ class Command(BaseCommand):
                             raise ValueError("Token expired and no refresh token available.")
                         
                     target_email = result.get('hr_email')
-                    if not target_email:
-                        result['hr_email'] = user.email
-                        self.stdout.write(self.style.WARNING(f"No HR email found, drafting to user {user.email} instead."))
+                    if not target_email or str(target_email).lower().strip() in ['none', 'null', 'none found', '']:
+                        raise ValueError("No HR email found. Skipping outreach to save credits.")
                     
                     # 4. Deduct credit safely before hitting Gmail API
                     if not deduct_credit_atomically(user.id, amount=1, description=f'Processed queue job {job.id}'):
