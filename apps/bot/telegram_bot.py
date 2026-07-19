@@ -64,17 +64,30 @@ async def handle_media_ingestion(update: Update, context: ContextTypes.DEFAULT_T
         return
 
     # Guardrail: Resume Presence Verification
-    if not hasattr(user, 'resume') or not user.resume.file:
+    if not hasattr(user, 'resume') or not user.resume.resume_storage_path:
         if update.message.document and update.message.document.mime_type == 'application/pdf':
             doc = update.message.document
             tg_file = await context.bot.get_file(doc.file_id)
             file_bytes = await tg_file.download_as_bytearray()
             
+            import asyncio
+            from utils.storage import upload_resume, get_public_url, delete_file
+            
             resume, _ = Resume.objects.get_or_create(user=user)
-            resume.file.save(doc.file_name, ContentFile(file_bytes))
+            if resume.resume_storage_path:
+                await asyncio.to_thread(delete_file, resume.resume_storage_path)
+                
+            wrapped_file = ContentFile(file_bytes, name=doc.file_name)
+            storage_path = await asyncio.to_thread(upload_resume, wrapped_file, user.id)
+            public_url = await asyncio.to_thread(get_public_url, storage_path)
+            
+            resume.resume_storage_path = storage_path
+            resume.resume_public_url = public_url
+            resume.original_filename = doc.file_name
+            resume.save()
             
             from apps.core.engine import extract_text_from_pdf
-            extract_text_from_pdf(resume)
+            await asyncio.to_thread(extract_text_from_pdf, resume)
             
             await update.message.reply_text("📄 Resume saved and processed successfully! You can now send job screenshots.")
             return
@@ -120,8 +133,19 @@ async def handle_media_ingestion(update: Update, context: ContextTypes.DEFAULT_T
     tg_file = await context.bot.get_file(photo_file.file_id)
     img_bytes = await tg_file.download_as_bytearray()
     
+    import asyncio
+    from utils.storage import upload_temp_file, get_public_url
+    
     job = ProcessingJob.objects.create(user=user, status='PENDING')
-    job.screenshot.save(f"tg_job_{job.id}.jpg", ContentFile(img_bytes))
+    wrapped_file = ContentFile(img_bytes, name=f"tg_job_{job.id}.jpg")
+    
+    storage_path = await asyncio.to_thread(upload_temp_file, wrapped_file, user.id)
+    public_url = await asyncio.to_thread(get_public_url, storage_path)
+    
+    job.screenshot_storage_path = storage_path
+    job.screenshot_public_url = public_url
+    job.save()
+    
     await update.message.reply_text(f"⚡ Ingested! Job reference ID #{job.id} appended to queue pipeline.")
 
 async def process_media_batch(context: ContextTypes.DEFAULT_TYPE):
@@ -150,13 +174,23 @@ async def process_media_batch(context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Validated: Push cleanly to PENDING database arrays
+    import asyncio
+    from utils.storage import upload_temp_file, get_public_url
+
     queued_ids = []
     for f_id in file_ids:
         tg_file = await bot.get_file(f_id)
         img_bytes = await tg_file.download_as_bytearray()
         
         job = ProcessingJob.objects.create(user=user, status='PENDING')
-        job.screenshot.save(f"tg_job_bulk_{job.id}.jpg", ContentFile(img_bytes))
+        wrapped_file = ContentFile(img_bytes, name=f"tg_job_bulk_{job.id}.jpg")
+        
+        storage_path = await asyncio.to_thread(upload_temp_file, wrapped_file, user.id)
+        public_url = await asyncio.to_thread(get_public_url, storage_path)
+        
+        job.screenshot_storage_path = storage_path
+        job.screenshot_public_url = public_url
+        job.save()
         queued_ids.append(str(job.id))
 
     await bot.send_message(

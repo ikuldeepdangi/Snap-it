@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'apps.queue_manager',
     'apps.core',
     'apps.bot',
+    'apps.campaigns',
 ]
 
 MIDDLEWARE = [
@@ -110,29 +111,40 @@ import urllib.parse
 # Look for a production storage path mount first
 PRODUCTION_STORAGE = "/app/storage"
 
-db_url = os.getenv("DATABASE_URL")
-if db_url:
-    url = urllib.parse.urlparse(db_url)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': url.path[1:],
-            'USER': url.username,
-            'PASSWORD': url.password,
-            'HOST': url.hostname,
-            'PORT': url.port,
-            'CONN_MAX_AGE': 600,
+server_mode = os.getenv("SERVER", "local").strip().lower()
+
+if server_mode == "production-live":
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        url = urllib.parse.urlparse(db_url)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': url.path[1:],
+                'USER': url.username,
+                'PASSWORD': url.password,
+                'HOST': url.hostname,
+                'PORT': url.port,
+                'CONN_MAX_AGE': 600,
+            }
         }
-    }
-elif os.path.exists(PRODUCTION_STORAGE):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(PRODUCTION_STORAGE, 'snap-it-db.sqlite3'),
-        }
-    }
+    else:
+        if os.path.exists(PRODUCTION_STORAGE):
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': os.path.join(PRODUCTION_STORAGE, 'snap-it-db.sqlite3'),
+                }
+            }
+        else:
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': BASE_DIR / 'snap-it-db.sqlite3',
+                }
+            }
 else:
-    # Your fallback local settings loop
+    # Local mode: Force SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

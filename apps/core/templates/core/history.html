@@ -228,11 +228,26 @@
         <div class="bg-neutral-900/50 border border-neutral-800 rounded-lg p-5">
             <div class="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-3">Reason</div>
             <div class="text-red-400/90 text-[14px] leading-relaxed font-mono" id="error-body"></div>
+            <div id="modal-reauth-section" class="mt-4 hidden">
+                <a href="{% url 'connect_gmail' %}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-all shadow-lg shadow-red-600/20 active:scale-[0.98]">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <span>Reconnect Google Account</span>
+                </a>
+            </div>
         </div>
         
         <div class="mt-8 flex gap-3">
             <button onclick="closeAllModals()" class="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium transition-colors">Close</button>
-            <button class="px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 text-sm font-semibold transition-colors">Retry Job</button>
+            <a id="reauth-btn-footer" href="{% url 'connect_gmail' %}" class="hidden px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors shadow-lg shadow-red-600/20 items-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <span>Reconnect Google Account</span>
+            </a>
         </div>
     </div>
 </div>
@@ -272,6 +287,36 @@
     // Run on load
     document.addEventListener('DOMContentLoaded', updateRelativeTimes);
 
+    // Clean Error Messages
+    function cleanErrorMessage(errorStr) {
+        if (!errorStr) return 'Unknown internal error occurred.';
+        const errLower = errorStr.toLowerCase();
+        
+        if (errLower.includes("invalid to header") || errLower.includes("invalid_argument")) {
+            return "Invalid recipient email address. The system could not extract a valid recruiter email address from the screenshot, or the extracted address is malformed. Please ensure the recruiter's email is visible and correct.";
+        }
+        if (errLower.includes("resume attachment not found")) {
+            return "Your uploaded resume file could not be found. Please re-upload your resume on the dashboard and try again.";
+        }
+        if (errLower.includes("user has no active resume") || errLower.includes("no active resume")) {
+            return "No active resume found. Please upload your resume in PDF format on the dashboard before uploading job screenshots.";
+        }
+        if (errLower.includes("credentials") || errLower.includes("token") || errLower.includes("auth")) {
+            return "Google/Gmail authentication failed or expired. Please disconnect and reconnect your Google account on the dashboard to renew permissions.";
+        }
+        if (errLower.includes("insufficient credit") || errLower.includes("credit balance")) {
+            return "Insufficient credits. Please check your wallet balance or purchase more credits to process this job.";
+        }
+        if (errLower.includes("gemini ai error") || errLower.includes("ai could not read")) {
+            return "AI analysis failed. We were unable to read or parse the job details from your screenshot. Please upload a clearer image.";
+        }
+        
+        if (errorStr.length < 120) {
+            return errorStr;
+        }
+        return "An unexpected error occurred while processing your request. Please try again with a clearer screenshot.";
+    }
+
     // Modal Logic
     function openPreviewModal(el) {
         document.getElementById('modal-backdrop').classList.remove('hidden');
@@ -301,7 +346,25 @@
             document.getElementById('modal-backdrop').classList.add('opacity-100');
         }, 10);
         
-        document.getElementById('error-body').textContent = el.getAttribute('data-error') || 'Unknown internal error occurred.';
+        const rawError = el.getAttribute('data-error') || '';
+        const cleanedMsg = cleanErrorMessage(rawError);
+        document.getElementById('error-body').textContent = cleanedMsg;
+        
+        // Show/hide reauth button if it is a credentials/token/auth error
+        const errLower = rawError.toLowerCase();
+        const isAuthError = errLower.includes("credentials") || errLower.includes("token") || errLower.includes("auth") || cleanedMsg.toLowerCase().includes("credentials") || cleanedMsg.toLowerCase().includes("token") || cleanedMsg.toLowerCase().includes("auth");
+        
+        const reauthSection = document.getElementById('modal-reauth-section');
+        const reauthBtnFooter = document.getElementById('reauth-btn-footer');
+        if (isAuthError) {
+            reauthSection.classList.remove('hidden');
+            reauthBtnFooter.classList.remove('hidden');
+            reauthBtnFooter.classList.add('flex');
+        } else {
+            reauthSection.classList.add('hidden');
+            reauthBtnFooter.classList.add('hidden');
+            reauthBtnFooter.classList.remove('flex');
+        }
         
         const d = new Date(el.getAttribute('data-date'));
         document.getElementById('error-date').textContent = d.toLocaleString('en-US', {

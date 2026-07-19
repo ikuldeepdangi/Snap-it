@@ -8,7 +8,7 @@
     <!-- Main Upload Area -->
     <div class="w-full bg-[#0d0d0d] rounded-2xl border border-indigo-500/30 relative overflow-hidden mb-8">
         {% if gmail_connected %}
-        <form id="job-form" class="w-full flex flex-col items-center justify-center p-4 sm:p-8">
+        <form id="job-form" class="w-full flex flex-col items-center justify-center p-4 sm:p-8 pb-3">
             <div id="job-drop-zone" onclick="document.getElementById('job-file').click()" class="w-full min-h-[220px] sm:min-h-[300px] border-2 border-dashed border-indigo-500/40 hover:border-indigo-400/80 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all duration-300 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer group px-4 pt-6 pb-10 sm:py-8">
                 <svg class="w-10 h-10 sm:w-12 sm:h-12 text-indigo-400 mb-4 sm:mb-6 group-hover:-translate-y-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -21,6 +21,11 @@
                 <input type="file" name="screenshot" id="job-file" accept="image/png, image/jpeg" multiple="multiple" class="hidden" onchange="submitJob()">
             </div>
         </form>
+        <div class="px-4 sm:px-8 pb-5 text-right border-t border-neutral-900/50 pt-3 bg-neutral-950/20">
+            <span class="text-xs text-neutral-500">
+                Gmail connected. Having issues? <a href="{% url 'connect_gmail' %}" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors hover:underline">Reconnect Google Account</a>
+            </span>
+        </div>
         {% else %}
         <div class="w-full flex flex-col items-center justify-center p-12 text-center">
             <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
