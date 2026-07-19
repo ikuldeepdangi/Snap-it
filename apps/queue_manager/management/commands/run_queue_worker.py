@@ -67,6 +67,17 @@ class Command(BaseCommand):
                     if job:
                         job.status = 'PROCESSING'
                         job.save()
+                        is_campaign = False
+                    else:
+                        from apps.campaigns.models import Company
+                        job = Company.objects.select_for_update(skip_locked=True).filter(
+                            campaign_status='PENDING'
+                        ).order_by('created_at').first()
+                        if job:
+                            job.campaign_status = 'PROCESSING'
+                            job.save()
+                            is_campaign = True
+
             except Exception as e:
                 self.stderr.write(self.style.ERROR(f"Error fetching job: {e}"))
                 time.sleep(5)
@@ -77,37 +88,66 @@ class Command(BaseCommand):
                 time.sleep(2)
                 continue
                 
-            self.stdout.write(f"Picked up Job {job.id} for {job.user.email}")
+            if is_campaign:
+                user = job.campaign.user if hasattr(job, 'campaign') and job.campaign else None
+            else:
+                user = getattr(job, 'user', None)
+                
+            if not user:
+                # Fail campaign job if user is None
+                if is_campaign:
+                    job.campaign_status = 'FAILED'
+                    job.verification_reason = "No user associated with this campaign."
+                    job.save()
+                time.sleep(2)
+                continue
+
+            self.stdout.write(f"Picked up Job {job.id} for {user.email}")
             
             screenshot_path = None
             resume_file_path = None
             try:
                 try:
                     # 2. Process job
-                    if not hasattr(job.user, 'resume') or not job.user.resume.resume_storage_path:
+                    if not hasattr(user, 'resume') or not user.resume.resume_storage_path:
                         raise ValueError("User has no active resume.")
                     
-                    resume_text = job.user.resume.extracted_text or ""
+                    resume_text = user.resume.extracted_text or ""
                     
                     from utils.storage import download_to_temp
                     self.stdout.write(f"Downloading files from storage...")
-                    screenshot_path = download_to_temp(job.screenshot_storage_path)
-                    resume_file_path = download_to_temp(job.user.resume.resume_storage_path)
+                    resume_file_path = download_to_temp(user.resume.resume_storage_path)
                     
-                    self.stdout.write(self.style.SUCCESS(f"[Step 1] Got active resume for {job.user.email} and saved screenshot {screenshot_path}"))
-                    
-                    # Use Gemini
-                    self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing AI Image OCR using Gemini..."))
-                    
-                    profile = getattr(job.user, 'profile', None)
-                    prompt_template = profile.get_email_prompt() if profile else None
-                    
-                    result = analyze_screenshot_with_gemini(screenshot_path, resume_text, prompt_template=prompt_template)
+                    if not is_campaign:
+                        screenshot_path = download_to_temp(job.screenshot_storage_path)
+                        self.stdout.write(self.style.SUCCESS(f"[Step 1] Got active resume for {user.email} and saved screenshot {screenshot_path}"))
+                        
+                        self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing AI Image OCR using Gemini..."))
+                        profile = getattr(user, 'profile', None)
+                        prompt_template = profile.get_email_prompt() if profile else None
+                        
+                        result = analyze_screenshot_with_gemini(screenshot_path, resume_text, prompt_template=prompt_template)
+                    else:
+                        self.stdout.write(self.style.SUCCESS(f"[Step 1] Got active resume for {user.email}"))
+                        
+                        self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing Campaign Draft using Gemini..."))
+                        profile = getattr(user, 'profile', None)
+                        prompt_template = profile.get_email_prompt() if profile else None
+                        
+                        from apps.core.engine import generate_email_draft_from_text
+                        result = generate_email_draft_from_text(
+                            company=job.name,
+                            role=job.campaign.tech if job.campaign else 'Tech Role',
+                            hr_email=job.hr_email,
+                            resume_content=resume_text,
+                            prompt_template=prompt_template
+                        )
                     
                     if "error" in result:
                         raise ValueError(f"Gemini AI Error: {result['error']}")
                     
-                    job.result_data = result
+                    if not is_campaign:
+                        job.result_data = result
                     self.stdout.write(self.style.SUCCESS(f"[Step 3] AI processing complete. Generated draft to: {result.get('company')} - {result.get('role')}"))
                     
                     # 3. Dispatch Email via Gmail API
@@ -121,34 +161,36 @@ class Command(BaseCommand):
                     # Refresh token if expiring within 5 minutes
                     if profile.token_expiry and profile.token_expiry <= timezone.now() + timedelta(minutes=5):
                         if profile.google_refresh_token:
-                            self.stdout.write(self.style.WARNING(f"Token expired for {job.user.email}, refreshing..."))
+                            self.stdout.write(self.style.WARNING(f"Token expired for {user.email}, refreshing..."))
                             try:
                                 new_tokens = refresh_access_token(profile.google_refresh_token)
                                 profile.google_access_token = new_tokens['access_token']
                                 profile.token_expiry = timezone.now() + timedelta(seconds=new_tokens.get('expires_in', 3600))
                                 profile.save()
-                                self.stdout.write(self.style.SUCCESS(f"Successfully refreshed token for {job.user.email}"))
+                                self.stdout.write(self.style.SUCCESS(f"Successfully refreshed token for {user.email}"))
                             except Exception as e:
                                 raise ValueError(f"Failed to refresh Google token: {e}")
                         else:
                             raise ValueError("Token expired and no refresh token available.")
                         
                     target_email = result.get('hr_email')
-                    if not target_email:
-                        result['hr_email'] = job.user.email
-                        self.stdout.write(self.style.WARNING(f"No HR email found, drafting to user {job.user.email} instead."))
+                    if not target_email or str(target_email).lower().strip() in ['none', 'null', 'none found', '']:
+                        raise ValueError("No HR email found. Skipping outreach to save credits.")
                     
                     # 4. Deduct credit safely before hitting Gmail API
-                    if not deduct_credit_atomically(job.user.id, amount=1, description=f'Processed queue job {job.id}'):
+                    if not deduct_credit_atomically(user.id, amount=1, description=f'Processed queue job {job.id}'):
                         raise ValueError("Insufficient credit balance during final processing step. Job aborted to prevent unpaid usage.")
                         
                     self.stdout.write(self.style.SUCCESS(f"[Step 4] Credit reserved. Dispatching email to {result['hr_email']} via Gmail..."))
-                    if not send_user_email(profile, result, resume_file_path):
-                        # Optional: Add refund logic here if Gmail explicitly returns False, but exception is raised below anyway
+                    original_resume_name = user.resume.filename if hasattr(user, 'resume') else None
+                    if not send_user_email(profile, result, resume_file_path, original_filename=original_resume_name):
                         raise ValueError("Failed to dispatch email via Gmail API.")
                     self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent."))
                     
-                    job.status = 'COMPLETED'
+                    if not is_campaign:
+                        job.status = 'COMPLETED'
+                    else:
+                        job.campaign_status = 'SENT'
                     job.save()
                     self.stdout.write(self.style.SUCCESS(f"[Step 6] Job {job.id} COMPLETED successfully."))
                 finally:
@@ -162,14 +204,15 @@ class Command(BaseCommand):
                                 self.stderr.write(self.style.ERROR(f"Failed to delete temp file {temp_file}: {clean_e}"))
                 
                 from apps.core.engine import send_async_telegram_alert
-                if hasattr(job.user, 'telegram_profile') and job.user.telegram_profile.is_verified:
+                if hasattr(user, 'telegram_profile') and user.telegram_profile.is_verified:
                     # Refresh wallet from DB to get the new balance
-                    job.user.credit_wallet.refresh_from_db()
-                    rem_balance = job.user.credit_wallet.balance
+                    user.credit_wallet.refresh_from_db()
+                    rem_balance = user.credit_wallet.balance
                     
-                    tg_id = job.user.telegram_profile.telegram_chat_id
+                    tg_id = user.telegram_profile.telegram_chat_id
+                    job_type_str = "Campaign Outreach" if is_campaign else "Job Application"
                     notification_text = (
-                        f"⚡ Job Application Dispatched Successfully!\n"
+                        f"⚡ {job_type_str} Dispatched Successfully!\n"
                         f"🏢 Company: {result.get('company')}\n"
                         f"🎯 Position: {result.get('role')}\n"
                         f"📬 Destination HR Address: {result.get('hr_email')}\n\n"
@@ -179,23 +222,28 @@ class Command(BaseCommand):
                     
             except Exception as e:
                 # 5. Handle Failure
-                job.status = 'FAILED'
                 error_msg = str(e)
                 clean_msg = clean_error_message(error_msg)
-                job.result_data = job.result_data or {}
-                job.result_data['worker_error'] = clean_msg
+                if not is_campaign:
+                    job.status = 'FAILED'
+                    job.result_data = job.result_data or {}
+                    job.result_data['worker_error'] = clean_msg
+                else:
+                    job.campaign_status = 'FAILED'
+                    job.verification_reason = clean_msg
                 job.save()
                 self.stderr.write(self.style.ERROR(f"Job {job.id} FAILED: {error_msg}"))
                 
                 # Send error notification to Telegram
                 try:
                     from apps.core.engine import send_async_telegram_alert
-                    if hasattr(job.user, 'telegram_profile') and job.user.telegram_profile.is_verified:
-                        tg_id = job.user.telegram_profile.telegram_chat_id
+                    if hasattr(user, 'telegram_profile') and user.telegram_profile.is_verified:
+                        tg_id = user.telegram_profile.telegram_chat_id
+                        job_type_str = "Campaign Outreach" if is_campaign else "Job Processing"
+                        context_msg = "while generating/sending the email" if is_campaign else "while processing your screenshot"
                         notification_text = (
-                            f"❌ Job Processing Failed!\n\n"
-                            f"An error occurred while processing your screenshot: {clean_msg}\n"
-                            f"Please make sure the screenshot clearly shows the HR email and try again."
+                            f"❌ {job_type_str} Failed!\n\n"
+                            f"An error occurred {context_msg}: {clean_msg}\n"
                         )
                         send_async_telegram_alert(tg_id, notification_text)
                 except Exception as alert_e:

@@ -58,6 +58,17 @@ def extract_text_from_pdf(resume_instance: Resume) -> str:
 
 
 def get_genai_client():
+    """
+    🚀 OPTIMIZED SPLIT-KEY ARCHITECTURE (Tier 0 / Tier 1 Separation)
+    
+    This function explicitly fetches the standard `GEMINI_API_KEY` (Tier 0 Free Account).
+    It is responsible for powering all token-heavy operations (e.g., OCR on screenshots,
+    reading massive master resumes, and drafting personalized cold emails).
+    
+    By isolating this copywriting phase to the free tier, we completely stop wallet burn 
+    on the prepaid balance. The Tier 1 `GEMINI_API_KEY_PAID` is reserved strictly for 
+    high-value web crawling operations inside the CampaignGeneratorService.
+    """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("Missing GEMINI_API_KEY in .env")
@@ -94,7 +105,7 @@ def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, mo
         print(f"Error parsing Gemini response: {e}")
         return {"error": "AI could not read image clearly", "raw": response.text}
 
-def send_user_email(profile, payload: Dict[str, Any], attachment_path: str) -> bool:
+def send_user_email(profile, payload: Dict[str, Any], attachment_path: str, original_filename: str = None) -> bool:
     """
     Connect to Gmail API and dispatch personalized emails with resume attachments.
     """
@@ -126,7 +137,7 @@ def send_user_email(profile, payload: Dict[str, Any], attachment_path: str) -> b
                 
             with open(attachment_path, 'rb') as f:
                 pdf_data = f.read()
-            filename = os.path.basename(attachment_path)
+            filename = original_filename if original_filename else os.path.basename(attachment_path)
             message.add_attachment(
                 pdf_data, 
                 maintype='application', 
@@ -141,6 +152,41 @@ def send_user_email(profile, payload: Dict[str, Any], attachment_path: str) -> b
     except Exception as e:
         print(f"Failed to send email via Gmail API: {e}")
         raise ValueError(f"Gmail API Error: {e}")
+
+def generate_email_draft_from_text(company: str, role: str, hr_email: str, resume_content: str, model: str = "gemini-3.1-flash-lite", prompt_template: str = None) -> Dict[str, Any]:
+    """
+    Uses Gemini to generate a personalized email draft based on extracted campaign data.
+    """
+    client = get_genai_client()
+    
+    if prompt_template is None:
+        from apps.authentication.models import UserProfile
+        prompt_template = UserProfile().get_email_prompt()
+        
+    prompt = prompt_template.format(
+        resume_content=resume_content if resume_content else "No resume provided"
+    )
+    
+    # We simulate what the OCR would have done but with explicit text inputs
+    input_text = f"Company: {company}\nRole: {role}\nHR Email: {hr_email}\n\nPlease generate the email."
+    
+    response = client.models.generate_content(
+        model=model,
+        contents=[prompt, input_text],
+        config={'response_mime_type': 'application/json'}
+    )
+    
+    try:
+        data = json.loads(response.text)
+        # Ensure the hr_email is correct since the model might hallucinate it
+        data['hr_email'] = hr_email
+        data['company'] = company
+        data['role'] = role
+        return data
+    except Exception as e:
+        print(f"Error parsing Gemini response: {e}")
+        return {"error": "AI could not generate draft from text", "raw": response.text}
+
 
 import asyncio
 from telegram import Bot
