@@ -231,10 +231,20 @@ document.getElementById('campaign-search').addEventListener('input', function(e)
     });
 });
 
-// Auto-polling for real-time status updates
+// Auto-polling for real-time status updates — only when jobs are active
 let pollingInterval;
+const TERMINAL_STATUSES = ['SENT', 'FAILED', 'COMPLETED', 'ERROR'];
+
+function hasActiveJobs() {
+    const statusBadges = document.querySelectorAll('[data-job-status]');
+    if (statusBadges.length === 0) return false;
+    return Array.from(statusBadges).some(el => !TERMINAL_STATUSES.includes(el.dataset.jobStatus));
+}
 
 function startPolling() {
+    // Don't start if nothing is actively running
+    if (!hasActiveJobs()) return;
+
     pollingInterval = setInterval(async () => {
         try {
             const response = await fetch(window.location.href, {
@@ -280,15 +290,24 @@ function startPolling() {
                 
                 document.getElementById('campaign-list-body').innerHTML = newList.innerHTML;
             }
+
+            // Stop polling if all jobs are now in a terminal state
+            if (!hasActiveJobs()) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
             
         } catch (e) {
             console.error('Polling failed', e);
         }
-    }, 5000); // Poll every 5 seconds for snappier updates
+    }, 5000);
 }
 
-// Start polling on load
+// Only start polling on load if there are active jobs
 document.addEventListener('DOMContentLoaded', () => {
-    startPolling();
+    if (hasActiveJobs()) {
+        startPolling();
+    }
 });
 </script>
+

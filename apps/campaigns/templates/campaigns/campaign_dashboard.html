@@ -191,10 +191,10 @@
                                 </div>
                                 
                                 <div class="shrink-0 ml-2 flex items-center gap-1.5">
-                                    {% if campaign.campaign_status == 'PENDING' or campaign.campaign_status == 'SEARCHING' or campaign.campaign_status == 'VERIFYING' %}<div class="w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" title="In Progress"></div>
-                                    {% elif campaign.campaign_status == 'COMPLETED' or campaign.campaign_status == 'SENT' %}<div class="w-2 h-2 rounded-full bg-[#22C55E]" title="Completed"></div>
+                                    {% if campaign.campaign_status == 'PENDING' or campaign.campaign_status == 'SEARCHING' or campaign.campaign_status == 'VERIFYING' %}<div data-job-status="{{ campaign.campaign_status }}" class="w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" title="In Progress"></div>
+                                    {% elif campaign.campaign_status == 'COMPLETED' or campaign.campaign_status == 'SENT' %}<div data-job-status="{{ campaign.campaign_status }}" class="w-2 h-2 rounded-full bg-[#22C55E]" title="Completed"></div>
                                     {% else %}
-                                        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#EF4444]/10 border border-[#EF4444]/20" title="{{ campaign.verification_reason }}">
+                                        <div data-job-status="{{ campaign.campaign_status|default:'FAILED' }}" class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#EF4444]/10 border border-[#EF4444]/20" title="{{ campaign.verification_reason }}">
                                             <div class="w-1.5 h-1.5 rounded-full bg-[#EF4444]"></div>
                                             <span class="text-[9px] font-bold text-[#EF4444] uppercase tracking-wider max-w-[80px] truncate">{{ campaign.verification_reason|default:"Failed" }}</span>
                                         </div>
