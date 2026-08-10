@@ -35,8 +35,8 @@ def clean_error_message(error_msg: str) -> str:
     if "insufficient credit" in error_msg_lower or "credit balance" in error_msg_lower:
         return "Insufficient credits. Please check your wallet balance or purchase more credits to process this job."
         
-    # 5. Gemini AI parsing issues
-    if "gemini ai error" in error_msg_lower or "ai could not read" in error_msg_lower:
+    # 5. Snap-it AI parsing issues
+    if "snapit ai error" in error_msg_lower or "ai could not read" in error_msg_lower:
         return (
             "AI analysis failed. We were unable to read or parse the job details "
             "from your screenshot. Please upload a clearer image."
@@ -122,7 +122,7 @@ class Command(BaseCommand):
                         screenshot_path = download_to_temp(job.screenshot_storage_path)
                         self.stdout.write(self.style.SUCCESS(f"[Step 1] Got active resume for {user.email} and saved screenshot {screenshot_path}"))
                         
-                        self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing AI Image OCR using Gemini..."))
+                        self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing AI Image OCR using Snap-it Vision..."))
                         profile = getattr(user, 'profile', None)
                         prompt_template = profile.get_email_prompt() if profile else None
                         
@@ -130,7 +130,7 @@ class Command(BaseCommand):
                     else:
                         self.stdout.write(self.style.SUCCESS(f"[Step 1] Got active resume for {user.email}"))
                         
-                        self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing Campaign Draft using Gemini..."))
+                        self.stdout.write(self.style.SUCCESS(f"[Step 2] Processing Campaign Draft using Snap-it AI..."))
                         profile = getattr(user, 'profile', None)
                         prompt_template = profile.get_email_prompt() if profile else None
                         
@@ -144,7 +144,7 @@ class Command(BaseCommand):
                         )
                     
                     if "error" in result:
-                        raise ValueError(f"Gemini AI Error: {result['error']}")
+                        raise ValueError(f"Snapit AI Error: {result['error']}")
                     
                     if not is_campaign:
                         job.result_data = result
