@@ -27,5 +27,6 @@ RUN python manage.py collectstatic --noinput
 # Expose internal standard port mapping
 EXPOSE 8080
 
-# Run supervisor to spin up web, bot, and background loops simultaneously
-CMD ["supervisord", "-c", "/app/supervisord.conf"]
+# Run migrations and supervisor to spin up web, bot, and background loops simultaneously
+CMD ["sh", "-c", "python manage.py migrate --noinput && supervisord -c /app/supervisord.conf"]
+
