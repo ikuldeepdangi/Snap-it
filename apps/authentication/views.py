@@ -127,6 +127,8 @@ def dashboard_view(request):
             extract_text_from_pdf(resume)
             return redirect('dashboard')
         except Exception as e:
+            import logging
+            logging.getLogger(__name__).exception(f"Failed to upload resume for user {request.user.id}: {e}")
             from django.contrib import messages
             messages.error(request, f"Failed to upload resume: {str(e)}")
             return redirect('dashboard')
