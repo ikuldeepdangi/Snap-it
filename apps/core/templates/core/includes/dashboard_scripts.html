@@ -197,7 +197,7 @@
                 } else {
                     if (data.status === 'PROCESSING') {
                         if (currentJobStatusText !== `Job ${activeJobIndex + 1} processing`) {
-                            addLog(`Analyzing job ${activeJobIndex + 1} with Gemini OCR...`, "text-indigo-400");
+                            addLog(`Analyzing job ${activeJobIndex + 1} with Snap-it Vision...`, "text-indigo-400");
                             currentJobStatusText = `Job ${activeJobIndex + 1} processing`;
                         }
                         const jobPercent = baseProgress + (perJobProgress * 0.5);

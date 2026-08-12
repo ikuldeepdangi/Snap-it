@@ -48,10 +48,11 @@ class CampaignGeneratorService:
 
         prompt = (
             f"You are a strict data parser connected to a live Google Search index. "
-            f"Search for active {target_tech} roles in {target_city}. "
+            f"Search for active {target_tech} roles in {target_city} focusing on listings that explicitly display contact emails. "
             f"CRITICAL: Do not write conversational prose, notes, or explanations. "
             f"Only return a raw, compressed JSON block containing exactly three fields: "
-            f"company_name, verified_hr_email (CRITICAL: You MUST find and extract the direct corporate recruiter, talent acquisition, or official careers email address), and source_url. If strictly unavailable, set to null.\n\n"
+            f"company_name, verified_hr_email, and source_url. "
+            f"STRICT RULE: If you cannot find a verified HR or careers email for a company, YOU MUST EXCLUDE that company from the list entirely. ONLY return companies where you successfully extracted an email address.\n\n"
             f"Search parameters:\n"
             f"- Target CTC Constraint: {salary_threshold}\n"
             f"- Experience Bracket: {experience_tier}\n"

@@ -76,7 +76,7 @@ def get_genai_client():
 
 def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, model: str = "gemini-3.1-flash-lite", prompt_template: str = None) -> Dict[str, Any]:
     """
-    Uses Gemini's Vision capabilities to extract structured parameters from job screenshots
+    Uses Snap-it Vision capabilities to extract structured parameters from job screenshots
     and generate a personalized email.
     """
     print("new way  -")
@@ -102,7 +102,7 @@ def analyze_screenshot_with_gemini(screenshot_path: str, resume_content: str, mo
     try:
         return json.loads(response.text)
     except Exception as e:
-        print(f"Error parsing Gemini response: {e}")
+        print(f"Error parsing Snap-it Vision response: {e}")
         return {"error": "AI could not read image clearly", "raw": response.text}
 
 def send_user_email(profile, payload: Dict[str, Any], attachment_path: str, original_filename: str = None) -> bool:
@@ -155,7 +155,7 @@ def send_user_email(profile, payload: Dict[str, Any], attachment_path: str, orig
 
 def generate_email_draft_from_text(company: str, role: str, hr_email: str, resume_content: str, model: str = "gemini-3.1-flash-lite", prompt_template: str = None) -> Dict[str, Any]:
     """
-    Uses Gemini to generate a personalized email draft based on extracted campaign data.
+    Uses Snap-it AI to generate a personalized email draft based on extracted campaign data.
     """
     client = get_genai_client()
     
@@ -184,7 +184,7 @@ def generate_email_draft_from_text(company: str, role: str, hr_email: str, resum
         data['role'] = role
         return data
     except Exception as e:
-        print(f"Error parsing Gemini response: {e}")
+        print(f"Error parsing Snap-it AI response: {e}")
         return {"error": "AI could not generate draft from text", "raw": response.text}
 
 
