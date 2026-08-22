@@ -13,6 +13,7 @@
         :root {
             --bg-color: #030303;
             --accent-purple: #8B5CF6;
+            --accent-blue: #00c2ff;
             --text-main: #F9FAFB;
             --text-muted: #9CA3AF;
             --border-color: rgba(255, 255, 255, 0.08);
@@ -24,14 +25,14 @@
             font-family: var(--font-sans);
             background-color: var(--bg-color);
             color: var(--text-main);
-            line-height: 1.6;
+            line-height: 1.7;
         }
-        .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+        .container { max-width: 840px; margin: 0 auto; padding: 0 24px; }
         nav {
             display: flex; align-items: center; height: 72px;
             border-bottom: 1px solid var(--border-color);
             position: sticky; top: 0; z-index: 100;
-            background: rgba(3, 3, 3, 0.7);
+            background: rgba(3, 3, 3, 0.85);
             backdrop-filter: blur(16px);
         }
         .logo {
@@ -40,51 +41,107 @@
             font-size: 1.25rem; color: white; text-decoration: none;
         }
         .logo img { height: 28px; width: auto; border-radius: 6px; }
-        .content { padding: 80px 0; }
-        h1 { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 16px; }
-        h2 { font-family: var(--font-display); font-size: 1.5rem; margin-top: 40px; margin-bottom: 16px; }
-        p { color: var(--text-muted); margin-bottom: 16px; font-size: 1.05rem; }
-        ul { color: var(--text-muted); margin-bottom: 16px; margin-left: 24px; }
+        .nav-links { margin-left: auto; display: flex; gap: 20px; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: white; }
+        .content { padding: 60px 0 100px 0; }
+        h1 { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 8px; font-weight: 800; letter-spacing: -0.02em; }
+        h2 { font-family: var(--font-display); font-size: 1.4rem; margin-top: 40px; margin-bottom: 14px; font-weight: 700; color: white; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        p { color: var(--text-muted); margin-bottom: 16px; font-size: 1rem; }
+        ul { color: var(--text-muted); margin-bottom: 16px; margin-left: 24px; font-size: 1rem; }
         li { margin-bottom: 8px; }
-        .last-updated { color: var(--accent-purple); font-weight: 500; margin-bottom: 40px; display: block; }
+        code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; color: #60a5fa; font-family: monospace; }
+        .last-updated { color: var(--accent-purple); font-weight: 600; margin-bottom: 32px; display: inline-block; font-size: 0.9rem; }
+        .callout {
+            background: rgba(139, 92, 246, 0.06);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .callout h3 { font-family: var(--font-display); font-size: 1.1rem; color: white; margin-bottom: 8px; }
+        .callout p { margin-bottom: 0; font-size: 0.95rem; }
+        footer { border-top: 1px solid var(--border-color); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        footer a { color: var(--text-muted); text-decoration: none; margin: 0 10px; }
+        footer a:hover { color: white; }
     </style>
 </head>
 <body>
     <nav>
-        <div class="container" style="max-width: 1200px;">
+        <div class="container" style="max-width: 1100px; display: flex; align-items: center; width: 100%;">
             <a href="/" class="logo">
                 <img src="{% static 'logo.png' %}" alt="SnapIt Logo">
-                Snap<span style="color: #00c2ff;">it</span>
+                Snap<span style="color: var(--accent-blue);">it</span>
             </a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/privacy/">Privacy Policy</a>
+                <a href="/terms/">Terms of Service</a>
+            </div>
         </div>
     </nav>
     <main class="content container">
         <h1>Privacy Policy</h1>
-        <span class="last-updated">Last Updated: June 2026</span>
+        <span class="last-updated">Effective & Last Updated: August 23, 2026</span>
         
-        <h2>1. Information We Collect</h2>
-        <p>At SnapIt, we only collect the information necessary to provide our core service—transforming job postings into direct email conversations. This includes:</p>
+        <p>SnapIt ("we", "us", or "our") operates the platform accessible at <a href="https://www.snapit.website" style="color: var(--accent-blue);">snapit.website</a> (and dosnapit.com) providing an AI-powered job application automation tool. This Privacy Policy explains how we collect, use, store, and protect your information when you use our website and services.</p>
+
+        <h2>1. Overview of SnapIt Service</h2>
+        <p>SnapIt allows job seekers to upload screenshots or descriptions of job postings, automatically extract role details and recruiter contact emails using AI, match the opportunity with the candidate's uploaded resume, and send personalized application emails directly from the user's connected Google/Gmail account.</p>
+
+        <h2>2. Google & Gmail Data Access and Scopes</h2>
+        <p>When you sign in or connect your Google account to SnapIt, we request permission via Google OAuth 2.0. We request the following specific scopes:</p>
         <ul>
-            <li><strong>Google Account Information:</strong> Your email address and basic profile information via OAuth.</li>
-            <li><strong>Resume Data:</strong> PDF documents you upload for the AI context matching engine.</li>
-            <li><strong>Job Postings:</strong> Screenshots or text snippets you submit to our processing queue.</li>
+            <li><code>email</code> & <code>profile</code>: Used strictly to authenticate your identity, retrieve your primary email address, and manage your SnapIt account session.</li>
+            <li><code>https://www.googleapis.com/auth/gmail.send</code>: Requested when you explicitly choose to connect Gmail to send application emails.</li>
         </ul>
 
-        <h2>2. How We Use Your Data</h2>
-        <p>Your data is used strictly for generating high-quality outreach emails. Specifically:</p>
+        <div class="callout">
+            <h3>Strict Gmail Scope Transparency & Usage Limits</h3>
+            <p>SnapIt requests <strong>ONLY</strong> the <code>gmail.send</code> scope. We use this permission <strong>EXCLUSIVELY</strong> to compose and send outbound job application emails that you explicitly request on your behalf. We <strong>DO NOT</strong> request access to read your inbox (<code>gmail.readonly</code>), modify your messages (<code>gmail.modify</code>), or manage your email account (<code>mail.google.com</code>). SnapIt <strong>NEVER</strong> reads, scans, searches, processes, or deletes your incoming or existing Gmail inbox messages or email threads.</p>
+        </div>
+
+        <h2>3. Storage of OAuth Tokens</h2>
+        <p>When you authorize SnapIt to connect your Gmail account, Google provides an OAuth access token and a refresh token. We store the <code>google_access_token</code>, <code>google_refresh_token</code>, and token expiration timestamps securely in our database attached to your user profile. These tokens are used solely by our automated background worker system to execute email dispatches that you request without requiring you to repeatedly log in.</p>
+
+        <h2>4. Information We Collect & Store</h2>
+        <p>In addition to Google OAuth authentication data, SnapIt collects and stores:</p>
         <ul>
-            <li>We utilize the Snap-it AI engine to correlate your resume context with the job posting.</li>
-            <li>We use the Gmail API (<code>gmail.send</code> scope) exclusively to dispatch emails on your behalf to the specified recruiter or hiring manager. We do not read, delete, or modify your existing inbox threads.</li>
+            <li><strong>Candidate Resume Data:</strong> PDF documents you upload to provide context for AI-generated application emails. Text extracted from your resume is stored securely to power job matching.</li>
+            <li><strong>Job Submission Data:</strong> Screenshots, company names, job roles, and recruiter email addresses extracted from your submissions.</li>
+            <li><strong>Processing Logs:</strong> History of processed outreach jobs and email dispatch timestamps.</li>
         </ul>
 
-        <h2>3. Data Protection and Security</h2>
-        <p>Security is baked into our architecture. Your uploaded resumes are securely stored on our private volume mounts. OAuth tokens are encrypted and handled safely. We do not sell, rent, or trade your personal information to third parties.</p>
+        <h2>5. How We Protect and Retain Your Data</h2>
+        <p>We implement industry-standard technical and organizational security measures to protect your data:</p>
+        <ul>
+            <li>All data transmissions between your browser, our servers, and Google APIs are encrypted using HTTPS (TLS 1.2/1.3).</li>
+            <li>OAuth credentials and refresh tokens are stored in private, restricted database storage.</li>
+            <li>Uploaded files (resumes and job screenshots) are stored in secure private storage volume mounts with strict access controls.</li>
+            <li>We do not sell, rent, trade, or monetize your personal data, resume content, or Google account information to any third party.</li>
+        </ul>
 
-        <h2>4. Data Retention</h2>
-        <p>You can delete your resume or disconnect your Google account from the dashboard at any time. When you remove your account, all associated OAuth tokens and uploaded media are permanently purged from our storage volumes.</p>
+        <h2>6. User Control, Disconnecting & Data Deletion</h2>
+        <p>You maintain full control over your data and connected accounts at all times:</p>
+        <ul>
+            <li><strong>Disconnecting Gmail:</strong> You can disconnect your Google account at any time through the SnapIt dashboard or by revoking SnapIt's permissions directly in your <a href="https://myaccount.google.com/permissions" target="_blank" style="color: var(--accent-blue);">Google Account Security Settings</a>.</li>
+            <li><strong>Data Deletion:</strong> You may delete your uploaded resume or account data via the dashboard settings. Alternatively, you can request full account and data deletion by emailing our support team. Upon receiving a deletion request, all associated OAuth tokens, resumes, job history, and account records will be permanently purged from our servers within 30 days.</li>
+        </ul>
 
-        <h2>5. Contact Us</h2>
-        <p>If you have any questions regarding this Privacy Policy or our data practices, please contact our support team at support@dosnapit.com.</p>
+        <h2>7. Compliance with Google API Services User Data Policy</h2>
+        <p>SnapIt's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" style="color: var(--accent-blue);">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+        <h2>8. Contact Us</h2>
+        <p>If you have any questions or concerns regarding this Privacy Policy, your data privacy, or requesting data deletion, please contact us at:</p>
+        <ul>
+            <li><strong>Support Email:</strong> <a href="mailto:support@snapit.website" style="color: var(--accent-blue);">support@snapit.website</a></li>
+            <li><strong>Developer Contact:</strong> <a href="mailto:kuldeepdangi0912@gmail.com" style="color: var(--accent-blue);">kuldeepdangi0912@gmail.com</a></li>
+        </ul>
     </main>
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 SnapIt. All rights reserved. | <a href="/">Home</a> | <a href="/privacy/">Privacy Policy</a> | <a href="/terms/">Terms of Service</a></p>
+        </div>
+    </footer>
 </body>
 </html>
