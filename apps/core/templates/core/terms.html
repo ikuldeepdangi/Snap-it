@@ -13,6 +13,7 @@
         :root {
             --bg-color: #030303;
             --accent-purple: #8B5CF6;
+            --accent-blue: #00c2ff;
             --text-main: #F9FAFB;
             --text-muted: #9CA3AF;
             --border-color: rgba(255, 255, 255, 0.08);
@@ -24,14 +25,14 @@
             font-family: var(--font-sans);
             background-color: var(--bg-color);
             color: var(--text-main);
-            line-height: 1.6;
+            line-height: 1.7;
         }
-        .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+        .container { max-width: 840px; margin: 0 auto; padding: 0 24px; }
         nav {
             display: flex; align-items: center; height: 72px;
             border-bottom: 1px solid var(--border-color);
             position: sticky; top: 0; z-index: 100;
-            background: rgba(3, 3, 3, 0.7);
+            background: rgba(3, 3, 3, 0.85);
             backdrop-filter: blur(16px);
         }
         .logo {
@@ -40,50 +41,88 @@
             font-size: 1.25rem; color: white; text-decoration: none;
         }
         .logo img { height: 28px; width: auto; border-radius: 6px; }
-        .content { padding: 80px 0; }
-        h1 { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 16px; }
-        h2 { font-family: var(--font-display); font-size: 1.5rem; margin-top: 40px; margin-bottom: 16px; }
-        p { color: var(--text-muted); margin-bottom: 16px; font-size: 1.05rem; }
-        ul { color: var(--text-muted); margin-bottom: 16px; margin-left: 24px; }
+        .nav-links { margin-left: auto; display: flex; gap: 20px; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: white; }
+        .content { padding: 60px 0 100px 0; }
+        h1 { font-family: var(--font-display); font-size: 2.5rem; margin-bottom: 8px; font-weight: 800; letter-spacing: -0.02em; }
+        h2 { font-family: var(--font-display); font-size: 1.4rem; margin-top: 40px; margin-bottom: 14px; font-weight: 700; color: white; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        p { color: var(--text-muted); margin-bottom: 16px; font-size: 1rem; }
+        ul { color: var(--text-muted); margin-bottom: 16px; margin-left: 24px; font-size: 1rem; }
         li { margin-bottom: 8px; }
-        .last-updated { color: var(--accent-purple); font-weight: 500; margin-bottom: 40px; display: block; }
+        .last-updated { color: var(--accent-purple); font-weight: 600; margin-bottom: 32px; display: inline-block; font-size: 0.9rem; }
+        footer { border-top: 1px solid var(--border-color); padding: 32px 0; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        footer a { color: var(--text-muted); text-decoration: none; margin: 0 10px; }
+        footer a:hover { color: white; }
     </style>
 </head>
 <body>
     <nav>
-        <div class="container" style="max-width: 1200px;">
+        <div class="container" style="max-width: 1100px; display: flex; align-items: center; width: 100%;">
             <a href="/" class="logo">
                 <img src="{% static 'logo.png' %}" alt="SnapIt Logo">
-                Snap<span style="color: #00c2ff;">it</span>
+                Snap<span style="color: var(--accent-blue);">it</span>
             </a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/privacy/">Privacy Policy</a>
+                <a href="/terms/">Terms of Service</a>
+            </div>
         </div>
     </nav>
     <main class="content container">
         <h1>Terms of Service</h1>
-        <span class="last-updated">Last Updated: June 2026</span>
+        <span class="last-updated">Effective & Last Updated: August 23, 2026</span>
         
         <h2>1. Acceptance of Terms</h2>
-        <p>By registering, accessing, or using the SnapIt service, you agree to be bound by these Terms of Service. If you do not agree, please do not use the application.</p>
+        <p>By accessing, registering for, or using the SnapIt website and services ("SnapIt", "the Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to all of these Terms, you may not use the Service.</p>
 
         <h2>2. Description of Service</h2>
-        <p>SnapIt provides an AI-powered pipeline to read job posting screenshots, match them with your uploaded resume, and automatically send introduction emails from your authenticated Google account.</p>
+        <p>SnapIt provides an AI-assisted job application processing workflow. Users upload job posting screenshots or text descriptions, and SnapIt extracts role requirements and contact details, matches them against the user's uploaded candidate resume, and automatically sends personalized job application emails on the user's behalf through their connected Gmail account.</p>
 
-        <h2>3. Fair Use & Account Integrity</h2>
-        <p>You agree to use SnapIt strictly for personal job hunting and professional networking. You are strictly prohibited from:</p>
+        <h2>3. User Responsibilities & Conduct</h2>
+        <p>You agree to use SnapIt in compliance with all applicable laws and regulations. You are solely responsible for:</p>
         <ul>
-            <li>Using the service for spamming, harassment, or malicious unsolicited outreach.</li>
-            <li>Uploading illegal, offensive, or prohibited content as your resume or image targets.</li>
-            <li>Attempting to bypass our credit system, API rate limits, or FCFS queuing architectures.</li>
+            <li>The content, accuracy, and truthfulness of your uploaded resume and credentials.</li>
+            <li>All outreach emails generated and sent from your connected Gmail account through SnapIt.</li>
+            <li>Ensuring that the recipient recruiter or hiring contact email addresses submitted to the Service are valid, professional contacts.</li>
         </ul>
 
-        <h2>4. Credits and Billing</h2>
-        <p>SnapIt operates on a credit-based system. Credits are consumed only on successful email dispatch. If parsing errors occur or delivery fails, your credits are protected and rolled back safely. All purchases made via our secure payment gateway (Stripe/Razorpay) are final and non-refundable.</p>
+        <h2>4. Prohibited Uses</h2>
+        <p>You agree not to engage in any of the following prohibited activities:</p>
+        <ul>
+            <li>Sending unsolicited bulk commercial messages (spam), phishing attempts, scams, or harassing communications.</li>
+            <li>Uploading illegal, defamatory, offensive, or infringing material as a resume or job submission target.</li>
+            <li>Attempting to probe, scan, breach, or compromise the security or credit accounting system of SnapIt.</li>
+            <li>Using automated scripts or bots to manipulate the platform or exceed credit allowances.</li>
+        </ul>
 
-        <h2>5. Limitation of Liability</h2>
-        <p>We are not responsible for the outcomes of your job applications or the exact verbiage generated by the AI models. SnapIt is provided "as is", without any warranties of uninterrupted performance, although we utilize production-grade architecture to ensure maximum uptime.</p>
+        <h2>5. Google / Gmail Account Integration</h2>
+        <p>SnapIt requires user authorization via Google OAuth 2.0 to send emails using the <code>gmail.send</code> scope. You acknowledge that emails sent through SnapIt will originate directly from your Gmail address. You may revoke SnapIt's access to your Google account at any time via your Google Account Security Settings.</p>
 
-        <h2>6. Modifications to Service</h2>
-        <p>We reserve the right to modify or discontinue any part of the service at any time without notice. Continued use of the platform following any such changes shall indicate your acknowledgement of such changes.</p>
+        <h2>6. Account Credits & Billing</h2>
+        <p>SnapIt operates on a credit system. Credits are consumed when job processing jobs successfully dispatch outreach emails. Payments made for credits via our supported payment processing partners are final and non-refundable, except as explicitly required by law.</p>
+
+        <h2>7. Disclaimer of Warranties & Limitation of Liability</h2>
+        <p>SnapIt is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind, whether express or implied. We do not guarantee that your job applications will result in job interviews, employment offers, or response from hiring managers. In no event shall SnapIt, its creators, or operators be liable for any indirect, incidental, special, or consequential damages arising out of or in connection with your use of the Service.</p>
+
+        <h2>8. Termination</h2>
+        <p>We reserve the right to suspend or terminate your access to SnapIt at our sole discretion, without prior notice, if you violate these Terms, engage in spam or fraudulent behavior, or misuse system resources.</p>
+
+        <h2>9. Modifications to Terms</h2>
+        <p>We may modify these Terms at any time. Continued use of SnapIt following the posting of updated Terms constitutes your acceptance of the revised Terms.</p>
+
+        <h2>10. Contact Us</h2>
+        <p>If you have any questions about these Terms of Service, please contact us at:</p>
+        <ul>
+            <li><strong>Support Email:</strong> <a href="mailto:support@snapit.website" style="color: var(--accent-blue);">support@snapit.website</a></li>
+            <li><strong>Developer Contact:</strong> <a href="mailto:kuldeepdangi0912@gmail.com" style="color: var(--accent-blue);">kuldeepdangi0912@gmail.com</a></li>
+        </ul>
     </main>
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 SnapIt. All rights reserved. | <a href="/">Home</a> | <a href="/privacy/">Privacy Policy</a> | <a href="/terms/">Terms of Service</a></p>
+        </div>
+    </footer>
 </body>
 </html>
