@@ -84,8 +84,21 @@
             <button id="manual-pay-button" onclick="openManualModal()"
                 class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-sm md:text-[15px] font-semibold py-3.5 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
                 disabled>
-                Pay Securely via UPI / Cards
+                Pay Securely via UPI (Manual)
             </button>
+        {% elif PAYMENT_MODE == 'both' %}
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button id="pay-button"
+                    class="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+                    disabled>
+                    Pay Online (Razorpay)
+                </button>
+                <button id="manual-pay-button" onclick="openManualModal()"
+                    class="flex-1 bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:text-neutral-600 disabled:cursor-not-allowed text-white text-sm font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all border border-neutral-700"
+                    disabled>
+                    Manual UPI QR
+                </button>
+            </div>
         {% else %}
             <button id="pay-button"
                 class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-sm md:text-[15px] font-semibold py-3.5 md:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
@@ -118,6 +131,9 @@
                         class="px-5 md:px-6 py-4 text-[11px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60">
                         Type Method</th>
                     <th
+                        class="px-5 md:px-6 py-4 text-[11px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60">
+                        Status</th>
+                    <th
                         class="px-5 md:px-6 py-4 text-[11px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800/60 text-right">
                         Credits Delta</th>
                 </tr>
@@ -126,14 +142,28 @@
                 {% for tx in transactions %}
                 <tr class="hover:bg-neutral-800/30 transition-colors group">
                     <td class="px-5 md:px-6 py-4 text-[13px] md:text-sm text-neutral-400">{{ tx.created_at|date:"Y-m-d H:i" }}</td>
-                    <td class="px-5 md:px-6 py-4 text-[13px] md:text-sm text-neutral-300">{{ tx.description|default:"-" }}</td>
+                    <td class="px-5 md:px-6 py-4 text-[13px] md:text-sm text-neutral-300">
+                        {{ tx.description|default:"-" }}
+                        {% if tx.failure_reason %}
+                            <div class="text-[11px] text-red-400/80 font-mono mt-0.5">{{ tx.failure_reason }}</div>
+                        {% endif %}
+                    </td>
                     <td class="px-5 md:px-6 py-4">
                         <span
                             class="text-[11px] bg-white/5 text-neutral-300 px-2.5 py-1 rounded-full border border-neutral-800">{{ tx.get_transaction_type_display|default:tx.transaction_type }}</span>
                     </td>
+                    <td class="px-5 md:px-6 py-4">
+                        {% if tx.status == 'SUCCESS' or not tx.status %}
+                            <span class="text-[11px] bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">Success</span>
+                        {% elif tx.status == 'FAILED' %}
+                            <span class="text-[11px] bg-red-500/10 text-red-400 px-2.5 py-1 rounded-full border border-red-500/20 font-medium">Failed</span>
+                        {% else %}
+                            <span class="text-[11px] bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/20 font-medium">{{ tx.status }}</span>
+                        {% endif %}
+                    </td>
                     <td class="px-5 md:px-6 py-4 text-right text-[13px] md:text-sm font-medium">
                         {% if tx.amount > 0 %}
-                        <span class="text-emerald-400">+{{ tx.amount }} pts</span>
+                        <span class="{% if tx.status == 'FAILED' %}text-neutral-500 line-through{% else %}text-emerald-400{% endif %}">+{{ tx.amount }} pts</span>
                         {% else %}
                         <span class="text-red-400">{{ tx.amount }} pts</span>
                         {% endif %}
@@ -141,7 +171,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="px-6 py-12 text-center text-sm text-neutral-500">
+                    <td colspan="5" class="px-6 py-12 text-center text-sm text-neutral-500">
                         No transactions found in your ledger.
                     </td>
                 </tr>
@@ -149,19 +179,141 @@
             </tbody>
         </table>
     </div>
+
 {% include 'billing/manual.html' %}
+
+<!-- Payment Success Modal -->
+<div id="payment-success-modal" onclick="if(event.target === this) closeSuccessModal();" class="fixed inset-0 bg-black/85 z-50 hidden backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#111] border border-emerald-500/40 rounded-3xl w-full max-w-md overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.25)] text-center p-7 transform transition-all">
+        <div class="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-5 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+            </svg>
+        </div>
+        <h3 class="text-2xl font-bold text-white tracking-tight mb-2">Payment Received! 🎉</h3>
+        <p class="text-sm text-neutral-300 mb-6 leading-relaxed">
+            <strong id="success-modal-amount" class="text-emerald-400 font-bold text-base">0</strong> Credits have been added to your account wallet balance.
+            <br><span class="text-neutral-400 text-xs mt-2 block">Enjoy applying to your targeted roles with automated emails!</span>
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <button onclick="window.location.reload();" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-emerald-500/25 text-sm">
+                Got it!
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Failure Modal -->
+<div id="payment-failed-modal" onclick="if(event.target === this) closeFailedModal();" class="fixed inset-0 bg-black/85 z-50 hidden backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#111] border border-red-500/40 rounded-3xl w-full max-w-lg overflow-hidden shadow-[0_0_50px_rgba(239,68,68,0.25)] p-6 md:p-7 transform transition-all">
+        <div class="w-14 h-14 bg-red-500/10 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-white tracking-tight text-center mb-1">Transaction Failed</h3>
+        <p class="text-xs text-neutral-400 text-center mb-5">Your account balance was not credited for this attempt.</p>
+
+        <!-- Payment Details Breakdown -->
+        <div class="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-4 mb-5 space-y-2.5 text-xs">
+            <div class="flex justify-between items-center pb-2 border-b border-neutral-800">
+                <span class="text-neutral-500 font-medium">Payment ID:</span>
+                <span id="failed-modal-payment-id" class="font-mono text-neutral-300 font-semibold truncate max-w-[200px]">-</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b border-neutral-800">
+                <span class="text-neutral-500 font-medium">Amount Attempted:</span>
+                <span id="failed-modal-amount-display" class="font-semibold text-white">₹0.00</span>
+            </div>
+            <div>
+                <span class="text-neutral-500 font-medium block mb-1.5">Failure Reason:</span>
+                <p id="failed-modal-reason" class="text-red-400 font-mono bg-red-500/10 p-3 rounded-xl border border-red-500/20 text-[11px] leading-relaxed break-words">
+                    Payment was not completed.
+                </p>
+            </div>
+        </div>
+
+        <!-- Money Protection Notice -->
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 mb-6 text-left flex items-start gap-3">
+            <svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="text-[11px] text-amber-300/90 leading-relaxed">
+                <strong class="text-amber-300 block mb-0.5">Where is your money?</strong>
+                If any money was debited from your bank account or UPI app, Razorpay will automatically issue a full refund to your original payment method within 5–7 working days.
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+            <button onclick="closeFailedModal(); window.location.reload();" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg shadow-indigo-500/20 text-sm">
+                View Updated Ledger
+            </button>
+            <button onclick="closeFailedModal(); openManualModal();" class="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold py-3 px-4 rounded-xl transition-all text-sm border border-neutral-700">
+                Pay via UPI (Manual)
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
     function openManualModal() {
-        const amount = document.getElementById('amount-input').value;
+        const amountInput = document.getElementById('amount-input');
+        const amount = parseInt(amountInput.value);
+        if (!amount || amount < 1) {
+            alert('Please enter a valid amount (minimum ₹1).');
+            return;
+        }
         document.getElementById('manual-amount').value = amount;
         const modal = document.getElementById('manual-payment-modal');
-        modal.classList.remove('hidden');
+        if (modal) modal.classList.remove('hidden');
     }
     
     function closeManualModal() {
         const modal = document.getElementById('manual-payment-modal');
-        modal.classList.add('hidden');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function openSuccessModal(amount) {
+        document.getElementById('success-modal-amount').textContent = amount;
+        const modal = document.getElementById('payment-success-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeSuccessModal() {
+        const modal = document.getElementById('payment-success-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function openFailedModal(reason, paymentId, amount) {
+        document.getElementById('failed-modal-reason').textContent = reason || 'Payment could not be processed.';
+        document.getElementById('failed-modal-payment-id').textContent = paymentId || 'N/A';
+        document.getElementById('failed-modal-amount-display').textContent = amount ? `₹${amount}.00` : 'N/A';
+        const modal = document.getElementById('payment-failed-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeFailedModal() {
+        const modal = document.getElementById('payment-failed-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    async function logFailedPayment(amount, orderId, paymentId, reason) {
+        try {
+            await fetch("{% url 'record_failed_payment' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    razorpay_order_id: orderId || '',
+                    razorpay_payment_id: paymentId || '',
+                    error_description: reason || 'Payment failed'
+                })
+            });
+        } catch (e) {
+            console.error('Error logging failed payment:', e);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -171,9 +323,21 @@
         const manualPayButton = document.getElementById('manual-pay-button');
         const errorDiv = document.getElementById('payment-error');
 
-        amountInput.addEventListener('input', function () {
-            const val = parseInt(this.value);
-            
+        function showError(msg) {
+            if (errorDiv) {
+                errorDiv.textContent = msg;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function hideError() {
+            if (errorDiv) {
+                errorDiv.textContent = '';
+                errorDiv.classList.add('hidden');
+            }
+        }
+
+        function updateButtons(val) {
             if (val && val >= 1) {
                 pointsPreview.textContent = val;
                 if (payButton) {
@@ -186,33 +350,40 @@
                 }
             } else {
                 pointsPreview.textContent = '0';
+                const labelText = (val && val < 1) ? `Minimum ₹1 Required` : `Pay Securely via UPI / Cards`;
                 if (payButton) {
                     payButton.disabled = true;
-                    if (val && val < 1) {
-                        payButton.textContent = `Minimum ₹1 Required`;
-                    } else {
-                        payButton.textContent = `Pay Securely via UPI / Cards`;
-                    }
+                    payButton.textContent = labelText;
                 }
                 if (manualPayButton) {
                     manualPayButton.disabled = true;
-                    if (val && val < 1) {
-                        manualPayButton.textContent = `Minimum ₹1 Required`;
-                    } else {
-                        manualPayButton.textContent = `Pay Securely via UPI / Cards`;
-                    }
+                    manualPayButton.textContent = (val && val < 1) ? `Minimum ₹1 Required` : `Pay ₹0.00 via UPI (Manual)`;
                 }
             }
-        });
+        }
+
+        if (amountInput) {
+            amountInput.addEventListener('input', function () {
+                hideError();
+                const val = parseInt(this.value);
+                updateButtons(val);
+            });
+        }
 
         if (payButton) {
             payButton.addEventListener('click', async function () {
                 const amount = parseInt(amountInput.value);
                 if (!amount || amount < 1) return;
 
+                if (typeof Razorpay === 'undefined') {
+                    showError('Razorpay SDK failed to load. Please check your internet connection.');
+                    openFailedModal('Razorpay SDK failed to load. Please check your internet connection.');
+                    return;
+                }
+
                 payButton.disabled = true;
                 payButton.textContent = 'Processing...';
-                errorDiv.style.display = 'none';
+                hideError();
 
                 try {
                     const response = await fetch("{% url 'create_razorpay_order' %}", {
@@ -227,14 +398,20 @@
                     const data = await response.json();
 
                     if (data.order_id) {
-                        var options = {
+                        const options = {
                             "key": "{{ razorpay_key_id }}",
                             "amount": data.amount,
                             "currency": data.currency,
                             "name": "SnapIt Credits",
                             "description": "Replenish account balance",
                             "order_id": data.order_id,
-                            "handler": async function (response) {
+                            "modal": {
+                                "ondismiss": function() {
+                                    updateButtons(amount);
+                                }
+                            },
+                            "handler": async function (rzpResponse) {
+                                payButton.textContent = 'Verifying payment...';
                                 try {
                                     const verifyRes = await fetch("{% url 'verify_razorpay_payment' %}", {
                                         method: 'POST',
@@ -243,54 +420,69 @@
                                             'X-CSRFToken': '{{ csrf_token }}'
                                         },
                                         body: JSON.stringify({
-                                            razorpay_payment_id: response.razorpay_payment_id,
-                                            razorpay_order_id: response.razorpay_order_id,
-                                            razorpay_signature: response.razorpay_signature,
+                                            razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                                            razorpay_order_id: rzpResponse.razorpay_order_id,
+                                            razorpay_signature: rzpResponse.razorpay_signature,
                                             amount: amount
                                         })
                                     });
                                     const verifyData = await verifyRes.json();
                                     if (verifyData.status === 'ok') {
-                                        window.location.href = verifyData.redirect_url || "{% url 'billing_page' %}";
+                                        window.location.href = verifyData.redirect_url || ("{% url 'billing_page' %}?payment_success=1&amount=" + amount);
                                     } else {
-                                        errorDiv.textContent = verifyData.error || 'Verification failed.';
-                                        errorDiv.style.display = 'block';
-                                        payButton.disabled = false;
-                                        payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                                        const errReason = verifyData.error || 'Payment verification failed.';
+                                        showError(errReason);
+                                        openFailedModal(errReason);
+                                        updateButtons(amount);
                                     }
                                 } catch (e) {
-                                    errorDiv.textContent = 'Error verifying payment.';
-                                    errorDiv.style.display = 'block';
-                                    payButton.disabled = false;
-                                    payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                                    const errReason = 'Server error while verifying payment.';
+                                    showError(errReason);
+                                    openFailedModal(errReason);
+                                    updateButtons(amount);
                                 }
                             },
                             "theme": {
                                 "color": "#6366f1"
                             }
                         };
-                        var rzp1 = new Razorpay(options);
-                        rzp1.on('payment.failed', function (response) {
-                            errorDiv.textContent = 'Payment failed: ' + response.error.description;
-                            errorDiv.style.display = 'block';
-                            payButton.disabled = false;
-                            payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                        const rzp1 = new Razorpay(options);
+                        rzp1.on('payment.failed', function (resp) {
+                            const errReason = (resp.error && resp.error.reason) ? resp.error.reason : '';
+                            const errDesc = (resp.error && resp.error.description) ? resp.error.description : 'Payment failed.';
+                            const fullReason = errReason ? `${errReason}: ${errDesc}` : errDesc;
+                            const pId = (resp.error && resp.error.metadata) ? resp.error.metadata.payment_id : '';
+                            const oId = (resp.error && resp.error.metadata) ? resp.error.metadata.order_id : data.order_id;
+                            
+                            logFailedPayment(amount, oId, pId, fullReason);
+                            showError('Payment failed: ' + fullReason);
+                            openFailedModal(fullReason, pId, amount);
+                            updateButtons(amount);
                         });
                         rzp1.open();
                     } else if (data.error) {
-                        errorDiv.textContent = data.error;
-                        errorDiv.style.display = 'block';
-                        payButton.disabled = false;
-                        payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                        logFailedPayment(amount, '', '', data.error);
+                        showError(data.error);
+                        openFailedModal(data.error, '', amount);
+                        updateButtons(amount);
                     }
                 } catch (err) {
-                    console.error(err);
-                    errorDiv.textContent = 'An unexpected error occurred. Please try again.';
-                    errorDiv.style.display = 'block';
-                    payButton.disabled = false;
-                    payButton.textContent = `Pay ₹${amount}.00 Securely via UPI / Cards`;
+                    console.error('Razorpay order creation error:', err);
+                    const sysErr = 'An unexpected error occurred. Please try again.';
+                    logFailedPayment(amount, '', '', sysErr);
+                    showError(sysErr);
+                    openFailedModal(sysErr, '', amount);
+                    updateButtons(amount);
                 }
             });
+        }
+
+        // Auto-show success modal if returning from successful payment
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('payment_success') === '1') {
+            const successAmount = urlParams.get('amount') || '1';
+            openSuccessModal(successAmount);
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
     });
 </script>
