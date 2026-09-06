@@ -1,5 +1,5 @@
 <!-- Manual Payment Modal (Hidden by Default) -->
-<div id="manual-payment-modal" class="fixed inset-0 bg-black/80 z-50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+<div id="manual-payment-modal" onclick="if(event.target === this) closeManualModal();" class="fixed inset-0 bg-black/80 z-50 hidden backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-[#111] border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all duration-300">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-neutral-800/60 flex items-center justify-between bg-neutral-900/30">
