@@ -188,28 +188,29 @@ class Command(BaseCommand):
                     if not target_email or str(target_email).lower().strip() in ['none', 'null', 'none found', '']:
                         raise ValueError("No HR email found. Skipping outreach to save credits.")
                     
-                    # 4. Check credit balance before attempting dispatch
-                    wallet = getattr(user, 'credit_wallet', None)
+                    # 4. Check credit balance before attempting email send
+                    from apps.billing.models import CreditWallet
+                    wallet = CreditWallet.objects.filter(user_id=user.id).first()
                     if not wallet or wallet.balance < 1:
-                        raise ValueError("Insufficient credit balance. Please recharge your wallet to dispatch emails.")
-                        
+                        raise ValueError("Insufficient credit balance. Please add credits to process jobs.")
+
+                    # 5. Dispatch Email via Gmail API
                     self.stdout.write(self.style.SUCCESS(f"[Step 4] Dispatching email to {result['hr_email']} via Gmail..."))
                     original_resume_name = user.resume.filename if hasattr(user, 'resume') else None
                     if not send_user_email(profile, result, resume_file_path, original_filename=original_resume_name):
                         raise ValueError("Failed to dispatch email via Gmail API.")
+                    self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent."))
                     
-                    # 5. Deduct credit ONLY after successful email dispatch
+                    # 6. Deduct credit ONLY after email is successfully sent
                     if not deduct_credit_atomically(user.id, amount=1, description=f'Processed queue job {job.id}'):
-                        raise ValueError("Insufficient credit balance during final deduction.")
-                        
-                    self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent and 1 credit deducted."))
-                    
+                        self.stderr.write(self.style.ERROR(f"Failed to deduct credit for user {user.id} after job {job.id}"))
+
                     if not is_campaign:
                         job.status = 'COMPLETED'
                     else:
                         job.campaign_status = 'SENT'
                     job.save()
-                    self.stdout.write(self.style.SUCCESS(f"[Step 6] Job {job.id} COMPLETED successfully."))
+                    self.stdout.write(self.style.SUCCESS(f"[Step 7] Job {job.id} COMPLETED successfully."))
                 finally:
                     import os
                     for temp_file in [screenshot_path, resume_file_path]:
@@ -246,13 +247,8 @@ class Command(BaseCommand):
                     job.result_data = job.result_data or {}
                     job.result_data['worker_error'] = clean_msg
                 else:
-                    error_msg_lower = error_msg.lower()
-                    if any(term in error_msg_lower for term in ["credentials", "token", "auth", "google profile", "linked google", "permission"]):
-                        job.campaign_status = 'PENDING'
-                        job.verification_reason = "Waiting for Gmail permission. Connect Google account to send."
-                    else:
-                        job.campaign_status = 'FAILED'
-                        job.verification_reason = clean_msg
+                    job.campaign_status = 'FAILED'
+                    job.verification_reason = clean_msg
                 job.save()
                 self.stderr.write(self.style.ERROR(f"Job {job.id} FAILED: {error_msg}"))
                 
