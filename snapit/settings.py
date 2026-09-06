@@ -30,8 +30,15 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-fallback-key-for-build-onl
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 BASE_URL = os.getenv("BASE_URL", "")
-ALLOWED_HOSTS = ['snapit.website', 'www.snapit.website', 'dosnapit.com', 'www.dosnapit.com']
-CSRF_TRUSTED_ORIGINS = ['https://snapit.website', 'https://www.snapit.website', 'https://dosnapit.com', 'https://www.dosnapit.com']
+ALLOWED_HOSTS = ['snapit.website', 'www.snapit.website', 'dosnapit.com', 'www.dosnapit.com', '.onrender.com']
+CSRF_TRUSTED_ORIGINS = ['https://snapit.website', 'https://www.snapit.website', 'https://dosnapit.com', 'https://www.dosnapit.com', 'https://*.onrender.com']
+
+env_allowed_hosts = os.getenv("ALLOWED_HOSTS", "")
+if env_allowed_hosts:
+    for h in env_allowed_hosts.split(","):
+        h_clean = h.strip()
+        if h_clean and h_clean not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(h_clean)
 
 if BASE_URL:
     if BASE_URL.startswith("http://") or BASE_URL.startswith("https://"):
