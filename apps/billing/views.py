@@ -7,22 +7,16 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 
-import razorpay
 import os
 import json
-import hmac
-import hashlib
 from email.message import EmailMessage
 import base64
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 from .models import CreditWallet, TransactionLedger
+from .razorpay import RazorpayService
 
-# Configure Razorpay
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
-razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET else None
 
 @login_required
 def billing_page(request):
@@ -32,12 +26,15 @@ def billing_page(request):
     wallet, created = CreditWallet.objects.get_or_create(user=request.user)
     transactions = TransactionLedger.objects.filter(wallet=wallet).order_by('-created_at')[:50]
     
+    payment_mode = os.getenv('PAYMENT_MODE', 'razorpay').strip().lower()
+    
     context = {
         'wallet': wallet,
         'transactions': transactions,
-        'razorpay_key_id': RAZORPAY_KEY_ID,
-        'PAYMENT_MODE': os.getenv('PAYMENT_MODE', 'manual').strip().lower(),
-        'UPI_ID': os.getenv('UPI_ID', 'your@upi').strip(),
+        'razorpay_key_id': RazorpayService.get_key_id(),
+        'is_razorpay_configured': RazorpayService.is_configured(),
+        'PAYMENT_MODE': payment_mode,
+        'UPI_ID': os.getenv('UPI_ID', 'snapit@upi').strip(),
     }
     return render(request, 'billing/ledger.html', context)
 
@@ -51,46 +48,33 @@ def create_razorpay_order(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-    if not razorpay_client:
+    if not RazorpayService.is_configured():
         return JsonResponse({'error': 'Payment gateway not configured'}, status=500)
 
     try:
         data = json.loads(request.body)
         amount = int(data.get('amount', 0))
     except (ValueError, TypeError, json.JSONDecodeError):
-        amount = 0
+        return JsonResponse({'error': 'Invalid amount payload'}, status=400)
 
-    # Minimum amount for Razorpay is usually 1 INR, but let's stick to 1 INR minimum
-    # Actually, we can keep the 50 INR minimum for consistency, but Razorpay allows smaller amounts.
     if amount < 1:
         return JsonResponse({'error': 'Minimum amount is ₹1'}, status=400)
 
     try:
-        # Amount is in paise
-        order_amount = amount * 100
-        order_currency = 'INR'
-        
-        notes = {
-            'user_id': request.user.id,
-            'amount': amount,
-        }
-
-        razorpay_order = razorpay_client.order.create(dict(
-            amount=order_amount,
-            currency=order_currency,
-            notes=notes,
-            payment_capture='1' # Auto capture
-        ))
-
-        return JsonResponse({
-            'order_id': razorpay_order['id'],
-            'amount': order_amount,
-            'currency': order_currency,
-        })
-
+        order_data = RazorpayService.create_order(
+            amount_in_rupees=amount,
+            user_id=request.user.id
+        )
+        return JsonResponse(order_data)
+    except ValueError as ve:
+        return JsonResponse({'error': str(ve)}, status=400)
     except Exception as e:
-        print(f"Error creating Razorpay order: {e}")
-        return JsonResponse({'error': 'Server error'}, status=500)
+        error_msg = str(e)
+        if "Authentication failed" in error_msg:
+            return JsonResponse({
+                'error': 'Razorpay authentication failed. Please check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your .env file.'
+            }, status=400)
+        return JsonResponse({'error': error_msg}, status=400)
 
 
 @login_required
@@ -98,9 +82,13 @@ def create_razorpay_order(request):
 def verify_razorpay_payment(request):
     """
     Verify the payment signature from Razorpay and credit the wallet.
+    Logs successful and failed transactions in TransactionLedger.
     """
     if request.method != 'POST':
-        return JsonResponse({'error': 'Invalid request'}, status=400)
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    if not RazorpayService.is_configured():
+        return JsonResponse({'error': 'Payment gateway not configured'}, status=500)
 
     try:
         data = json.loads(request.body)
@@ -110,51 +98,102 @@ def verify_razorpay_payment(request):
         amount = int(data.get('amount', 0))
 
         if not all([razorpay_payment_id, razorpay_order_id, razorpay_signature]):
-            return JsonResponse({'error': 'Missing parameters'}, status=400)
+            return JsonResponse({'error': 'Missing payment verification parameters'}, status=400)
+
+        wallet, _ = CreditWallet.objects.select_for_update().get_or_create(user=request.user)
 
         # Verify signature
-        params_dict = {
-            'razorpay_order_id': razorpay_order_id,
-            'razorpay_payment_id': razorpay_payment_id,
-        }
-        
-        try:
-            razorpay_client.utility.verify_payment_signature(params_dict.copy())
-            # Or manually:
-            # expected_signature = hmac.new(
-            #     bytes(RAZORPAY_KEY_SECRET, 'utf-8'),
-            #     bytes(f"{razorpay_order_id}|{razorpay_payment_id}", 'utf-8'),
-            #     hashlib.sha256
-            # ).hexdigest()
-            # if expected_signature != razorpay_signature: raise
-        except razorpay.errors.SignatureVerificationError:
-            return JsonResponse({'error': 'Invalid signature'}, status=400)
+        is_valid = RazorpayService.verify_payment_signature(
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            razorpay_signature=razorpay_signature
+        )
 
-        # Ensure transaction isn't already processed
-        if TransactionLedger.objects.filter(description__icontains=razorpay_payment_id).exists():
-            return JsonResponse({'status': 'ok', 'message': 'Already processed'})
+        if not is_valid:
+            # Record failed transaction in DB
+            TransactionLedger.objects.create(
+                wallet=wallet,
+                amount=amount,
+                transaction_type='RAZORPAY',
+                status='FAILED',
+                razorpay_order_id=razorpay_order_id,
+                razorpay_payment_id=razorpay_payment_id,
+                failure_reason='Signature verification failed',
+                description=f"Failed Payment ({razorpay_payment_id}): Invalid signature"
+            )
+            return JsonResponse({'error': 'Invalid payment signature. Verification failed.'}, status=400)
 
-        # Update wallet
-        wallet = CreditWallet.objects.select_for_update().get(user=request.user)
+        # Idempotency check: Ensure transaction isn't already processed
+        if TransactionLedger.objects.filter(razorpay_payment_id=razorpay_payment_id, status='SUCCESS').exists() or \
+           TransactionLedger.objects.filter(description__icontains=razorpay_payment_id, status='SUCCESS').exists():
+            return JsonResponse({
+                'status': 'ok',
+                'message': 'Payment already processed',
+                'amount': amount,
+                'redirect_url': reverse('billing_page') + f"?payment_success=1&amount={amount}"
+            })
+
+        # Update wallet balance
         wallet.balance += amount
         wallet.save()
 
-        # Record transaction
+        # Record successful transaction in DB
         TransactionLedger.objects.create(
             wallet=wallet,
             amount=amount,
-            transaction_type='REFILL',
-            description=f"Payment via Razorpay: {razorpay_payment_id}"
+            transaction_type='RAZORPAY',
+            status='SUCCESS',
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            description=f"Razorpay Online Refill: {razorpay_payment_id}"
         )
 
-        messages.success(request, f"Payment successful! {amount} points have been added to your wallet.")
-        return JsonResponse({'status': 'ok', 'redirect_url': reverse('billing_page')})
+        messages.success(request, f"🎉 Payment Received! {amount} Credits have been added to your wallet. Enjoy applying!")
+        return JsonResponse({
+            'status': 'ok',
+            'amount': amount,
+            'new_balance': wallet.balance,
+            'redirect_url': reverse('billing_page') + f"?payment_success=1&amount={amount}"
+        })
 
-    except CreditWallet.DoesNotExist:
-        return JsonResponse({'error': 'Wallet not found'}, status=404)
     except Exception as e:
-        print(f"Payment verification error: {e}")
-        return JsonResponse({'error': 'Server error'}, status=500)
+        return JsonResponse({'error': f'Server error during payment verification: {str(e)}'}, status=500)
+
+
+@login_required
+def record_failed_payment(request):
+    """
+    Records a failed or cancelled Razorpay payment attempt into TransactionLedger for full audit tracking.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        amount = int(data.get('amount', 0))
+        razorpay_order_id = data.get('razorpay_order_id', '')
+        razorpay_payment_id = data.get('razorpay_payment_id', '')
+        error_description = data.get('error_description', 'Payment failed or cancelled by user')
+
+        wallet, _ = CreditWallet.objects.get_or_create(user=request.user)
+
+        # Check if already logged to prevent duplicates
+        if razorpay_payment_id and TransactionLedger.objects.filter(razorpay_payment_id=razorpay_payment_id).exists():
+            return JsonResponse({'status': 'ok', 'message': 'Already recorded'})
+
+        TransactionLedger.objects.create(
+            wallet=wallet,
+            amount=amount,
+            transaction_type='RAZORPAY',
+            status='FAILED',
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            failure_reason=error_description,
+            description=f"Razorpay Refill Failed: {error_description}"
+        )
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 
 @login_required
