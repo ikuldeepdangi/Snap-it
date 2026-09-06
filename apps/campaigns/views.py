@@ -29,7 +29,7 @@ def campaign_dashboard(request):
     success_rate = round((total_sent / total_companies) * 100) if total_companies else 0
     credits_used = total_companies * 1 # Mock mapping
 
-    paginator = Paginator(all_campaigns, 5) # 5 campaigns per page
+    paginator = Paginator(all_campaigns, 7) # 7 campaigns per page
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
@@ -44,6 +44,7 @@ def campaign_dashboard(request):
         tech = campaign.tech or 'Tech'
         formatted_batches.append({
             'id': f'batch_{campaign.id}',
+            'campaign_id': campaign.id,
             'short_id': f'EXT-{str(campaign.id).zfill(6)}',
             'tech': tech,
             'date': campaign.created_at,
@@ -55,9 +56,14 @@ def campaign_dashboard(request):
             'campaign_name': campaign.name or f"{tech} Hiring"
         })
         
+    profile = getattr(request.user, 'profile', None)
+    gmail_connected = profile and (profile.gmail_connected or bool(profile.google_access_token or profile.google_refresh_token))
+
     return render(request, 'campaigns/campaign_dashboard.html', {
         'campaign_batches': formatted_batches,
         'page_obj': page_obj,
+        'gmail_connected': gmail_connected,
+        'connect_gmail_url': reverse('connect_gmail'),
         'analytics': {
             'total_companies': total_companies,
             'total_sent': total_sent,

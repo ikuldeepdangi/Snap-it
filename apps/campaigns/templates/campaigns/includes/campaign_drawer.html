@@ -52,7 +52,10 @@
 
             <div id="d-failure-box" class="hidden bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-xl p-4 text-sm text-[#EF4444] mb-6">
                 <p class="font-bold mb-1 flex items-center gap-1"><i class="ph-fill ph-warning-circle"></i> Processing Skipped</p>
-                <p id="d-failure-reason" class="text-xs"></p>
+                <p id="d-failure-reason" class="text-xs mb-3"></p>
+                <a id="d-failure-action-btn" href="{% url 'connect_gmail' %}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#EF4444] hover:bg-red-600 text-white text-xs font-bold transition-all shadow-md">
+                    <i class="ph-bold ph-google-logo"></i> Reconnect Google Account →
+                </a>
             </div>
 
             <!-- Recipients section -->
@@ -95,7 +98,7 @@
                         <p class="text-[11px] text-[#4F8CFF]/70">Email sequence scheduled via pipeline.</p>
                     </div>
                 </div>
-                <button class="px-3 py-1.5 bg-[#4F8CFF] text-white text-xs font-bold rounded-lg shadow-lg shadow-[#4F8CFF]/20 hover:bg-blue-500 transition-colors border border-blue-400">
+                <button id="d-view-logs-btn" class="px-3 py-1.5 bg-[#4F8CFF] text-white text-xs font-bold rounded-lg shadow-lg shadow-[#4F8CFF]/20 hover:bg-blue-500 transition-colors border border-blue-400">
                     View Logs
                 </button>
             </div>

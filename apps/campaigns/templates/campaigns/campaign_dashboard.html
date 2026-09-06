@@ -16,8 +16,8 @@
     .animate-sparkle { animation: sparkle 2s ease-in-out infinite; }
 </style>
 
-<!-- Full Viewport Height Container (No scrolling on body) -->
-<div class="h-[calc(100vh-80px)] min-h-[600px] flex flex-col max-w-[1400px] mx-auto w-full text-zinc-300 relative animate-in fade-in duration-500">
+<!-- Full Viewport Height Container -->
+<div class="flex flex-col max-w-[1400px] mx-auto w-full text-zinc-300 relative animate-in fade-in duration-500 pb-8">
     
     <!-- HEADER -->
     <div class="flex-none flex items-center justify-between pb-4 mb-4 border-b border-white/5">
@@ -30,6 +30,26 @@
         
 
     </div>
+
+    {% if not gmail_connected %}
+    <!-- GMAIL PERMISSION WARNING BANNER -->
+    <div class="flex-none mb-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-200 shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl shrink-0">
+                <i class="ph-bold ph-warning"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                    Gmail Outreach Permission Required
+                </h4>
+                <p class="text-xs text-amber-200/80 mt-0.5">Your campaign targets are pending. Connect your Google account to grant email dispatch permissions.</p>
+            </div>
+        </div>
+        <a href="{{ connect_gmail_url }}" class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-bold text-xs py-2.5 px-5 rounded-lg transition-all shadow-md shrink-0 flex items-center justify-center gap-2">
+            <i class="ph-bold ph-google-logo"></i> Connect Gmail Account →
+        </a>
+    </div>
+    {% endif %}
 
     <!-- STATS ROW -->
     <div id="stats-row" class="flex-none grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6 px-1 sm:px-0">
@@ -91,8 +111,8 @@
         </div>
     </div>
 
-    <!-- LIST CONTAINER (Flex-1, taking up remaining vertical space) -->
-    <div class="flex-1 bg-[#161A22] border border-white/5 rounded-2xl flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.2)] overflow-hidden">
+    <!-- LIST CONTAINER -->
+    <div class="bg-[#161A22] border border-white/5 rounded-2xl flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.2)] overflow-hidden">
         
         <!-- Table Header -->
         <div class="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/5 bg-white/[0.02] text-[11px] font-bold text-zinc-500 uppercase tracking-wider flex-none">
@@ -102,8 +122,8 @@
             <div class="col-span-2 text-right">Actions</div>
         </div>
         
-        <!-- Scrollable List Body -->
-        <div id="campaign-list-body" class="flex-1 overflow-y-auto custom-scrollbar bg-[#0A0A0B]/50 divide-y divide-white/5">
+        <!-- List Body -->
+        <div id="campaign-list-body" class="overflow-y-auto custom-scrollbar bg-[#0A0A0B]/50 divide-y divide-white/5">
             {% for batch in campaign_batches %}
             <div class="border-b border-white/5 last:border-0 group/batch campaign-batch-row">
                 <div class="px-4 lg:px-6 py-4 hover:bg-white/[0.02] transition-colors flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-4 lg:items-center relative cursor-pointer" onclick="toggleBatch('{{ batch.id }}')">
@@ -131,6 +151,11 @@
                         
                         <!-- Mobile Actions -->
                         <div class="flex lg:hidden items-center gap-2">
+                            {% if batch.failed > 0 %}
+                            <button onclick="event.stopPropagation(); retryCampaign('{{ batch.campaign_id }}')" class="px-2 py-1 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-[10px] font-bold uppercase tracking-wide transition-colors border border-amber-500/20 flex items-center gap-1 group/btnRetryMob" title="Retry Failed Outreach">
+                                <i class="ph-bold ph-arrows-clockwise group-hover/btnRetryMob:rotate-180 transition-transform"></i> Retry
+                            </button>
+                            {% endif %}
                             <button class="px-2 py-1 rounded bg-[#4F8CFF]/10 text-[#4F8CFF] hover:bg-[#4F8CFF]/20 text-[10px] font-bold uppercase tracking-wide transition-colors border border-[#4F8CFF]/20 flex items-center gap-1 group/btnMobile">
                                 <span id="text-mob-{{ batch.id }}">View</span> <i id="icon-mob-{{ batch.id }}" class="ph-bold ph-caret-down transition-transform group-hover/btnMobile:translate-y-[1px]"></i>
                             </button>
@@ -159,8 +184,13 @@
                     </div>
 
                     <!-- Desktop Actions Column -->
-                    <div class="hidden lg:flex lg:col-span-2 items-center justify-end gap-1">
-                        <button class="px-3 py-1 rounded bg-[#4F8CFF]/10 text-[#4F8CFF] hover:bg-[#4F8CFF]/20 text-[10px] font-bold uppercase tracking-wide ml-2 transition-colors border border-[#4F8CFF]/20 flex items-center gap-1 group/btn">
+                    <div class="hidden lg:flex lg:col-span-2 items-center justify-end gap-1.5">
+                        {% if batch.failed > 0 %}
+                        <button onclick="event.stopPropagation(); retryCampaign('{{ batch.campaign_id }}')" class="px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-[10px] font-bold uppercase tracking-wide transition-colors border border-amber-500/20 flex items-center gap-1 group/btnRetry" title="Retry Failed Outreach">
+                            <i class="ph-bold ph-arrows-clockwise group-hover/btnRetry:rotate-180 transition-transform"></i> Retry
+                        </button>
+                        {% endif %}
+                        <button class="px-3 py-1 rounded bg-[#4F8CFF]/10 text-[#4F8CFF] hover:bg-[#4F8CFF]/20 text-[10px] font-bold uppercase tracking-wide transition-colors border border-[#4F8CFF]/20 flex items-center gap-1 group/btn">
                             <span id="text-{{ batch.id }}">View</span> <i id="icon-{{ batch.id }}" class="ph-bold ph-caret-down transition-transform group-hover/btn:translate-y-[1px]"></i>
                         </button>
                     </div>
@@ -173,7 +203,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {% for campaign in batch.targets %}
                             <div class="bg-[#161A22] border border-white/5 hover:border-[#4F8CFF]/50 rounded-xl p-3 flex items-center justify-between cursor-pointer transition-colors group/target"
-                                onclick="openCampaignDetails('{{ campaign.name|escapejs }}', '{{ campaign.website|escapejs }}', '{{ campaign.campaign_status }}', '{{ campaign.hr_email|escapejs }}', '{{ batch.tech|escapejs }}', '{{ campaign.founder_email|default:""|escapejs }}', '{{ campaign.engineering_email|default:""|escapejs }}', '{{ campaign.recruiter_email|default:""|escapejs }}', '{{ campaign.location|default:""|escapejs }}', '{{ campaign.evidence_url|default:""|escapejs }}', '', '')">
+                                onclick="openCampaignDetails('{{ campaign.name|escapejs }}', '{{ campaign.website|escapejs }}', '{{ campaign.campaign_status }}', '{{ campaign.hr_email|escapejs }}', '{{ batch.tech|escapejs }}', '{{ campaign.founder_email|default:""|escapejs }}', '{{ campaign.engineering_email|default:""|escapejs }}', '{{ campaign.recruiter_email|default:""|escapejs }}', '{{ campaign.location|default:""|escapejs }}', '{{ campaign.evidence_url|default:""|escapejs }}', '', '{{ campaign.verification_reason|default:""|escapejs }}')">
                                 
                                 <div class="flex items-center gap-3 overflow-hidden">
                                     <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-400 group-hover/target:text-[#4F8CFF] transition-colors shrink-0">
@@ -225,7 +255,7 @@
             <div>
                 Showing page <span class="font-bold text-white">{{ page_obj.number }}</span> of <span class="font-bold text-white">{{ page_obj.paginator.num_pages }}</span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
                 {% if page_obj.has_previous %}
                 <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700 transition-colors flex items-center gap-1">
                     <i class="ph-bold ph-caret-left"></i> Previous
@@ -235,6 +265,21 @@
                     <i class="ph-bold ph-caret-left"></i> Previous
                 </span>
                 {% endif %}
+
+                <!-- Page Number Buttons -->
+                <div class="flex items-center gap-1 mx-1">
+                    {% for page_num in page_obj.paginator.page_range %}
+                        {% if page_num == page_obj.number %}
+                        <span class="px-3 py-1.5 rounded-lg bg-[#4F8CFF] text-white font-bold text-xs shadow-[0_0_10px_rgba(79,140,255,0.4)]">
+                            {{ page_num }}
+                        </span>
+                        {% else %}
+                        <a href="?page={{ page_num }}" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors text-xs font-medium">
+                            {{ page_num }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
 
                 {% if page_obj.has_next %}
                 <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700 transition-colors flex items-center gap-1">

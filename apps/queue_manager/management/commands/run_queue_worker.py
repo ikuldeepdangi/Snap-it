@@ -188,15 +188,21 @@ class Command(BaseCommand):
                     if not target_email or str(target_email).lower().strip() in ['none', 'null', 'none found', '']:
                         raise ValueError("No HR email found. Skipping outreach to save credits.")
                     
-                    # 4. Deduct credit safely before hitting Gmail API
-                    if not deduct_credit_atomically(user.id, amount=1, description=f'Processed queue job {job.id}'):
-                        raise ValueError("Insufficient credit balance during final processing step. Job aborted to prevent unpaid usage.")
+                    # 4. Check credit balance before attempting dispatch
+                    wallet = getattr(user, 'credit_wallet', None)
+                    if not wallet or wallet.balance < 1:
+                        raise ValueError("Insufficient credit balance. Please recharge your wallet to dispatch emails.")
                         
-                    self.stdout.write(self.style.SUCCESS(f"[Step 4] Credit reserved. Dispatching email to {result['hr_email']} via Gmail..."))
+                    self.stdout.write(self.style.SUCCESS(f"[Step 4] Dispatching email to {result['hr_email']} via Gmail..."))
                     original_resume_name = user.resume.filename if hasattr(user, 'resume') else None
                     if not send_user_email(profile, result, resume_file_path, original_filename=original_resume_name):
                         raise ValueError("Failed to dispatch email via Gmail API.")
-                    self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent."))
+                    
+                    # 5. Deduct credit ONLY after successful email dispatch
+                    if not deduct_credit_atomically(user.id, amount=1, description=f'Processed queue job {job.id}'):
+                        raise ValueError("Insufficient credit balance during final deduction.")
+                        
+                    self.stdout.write(self.style.SUCCESS(f"[Step 5] Email successfully sent and 1 credit deducted."))
                     
                     if not is_campaign:
                         job.status = 'COMPLETED'

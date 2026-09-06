@@ -63,54 +63,114 @@ document.getElementById('max_companies').addEventListener('input', function(e) {
 
 // Drawer logic
 function openCampaignDetails(name, website, status, hrEmail, tech, founder, engLead, recruiter, location, evidenceUrl, unused1, failureReason) {
-    document.getElementById('d-company').textContent = name || 'Unknown';
-    document.getElementById('d-logo-letter').textContent = (name || 'U').charAt(0).toUpperCase();
-    document.getElementById('d-domain-text').textContent = website ? new URL(website).hostname : 'website.com';
-    if(website) {
-        document.getElementById('d-domain').href = website;
-    } else {
-        document.getElementById('d-domain').removeAttribute('href');
+    try {
+        document.getElementById('d-company').textContent = name || 'Unknown';
+        document.getElementById('d-logo-letter').textContent = (name || 'U').charAt(0).toUpperCase();
+        
+        let displayDomain = 'website.com';
+        if (website && website !== 'None' && website !== 'null' && website !== '') {
+            try {
+                let formattedUrl = website;
+                if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+                    formattedUrl = 'https://' + formattedUrl;
+                }
+                displayDomain = new URL(formattedUrl).hostname || website;
+                document.getElementById('d-domain').href = formattedUrl;
+            } catch (urlErr) {
+                displayDomain = website;
+                document.getElementById('d-domain').removeAttribute('href');
+            }
+        } else {
+            document.getElementById('d-domain').removeAttribute('href');
+        }
+        document.getElementById('d-domain-text').textContent = displayDomain;
+
+        document.getElementById('d-tech').textContent = tech || 'Tech Stack';
+        
+        const statusEl = document.getElementById('d-status');
+        statusEl.innerHTML = `<span>${status}</span>`;
+        statusEl.className = "px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1 ";
+        if (status === 'PENDING' || status === 'SEARCHING' || status === 'VERIFYING') statusEl.className += 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20';
+        else if (status === 'SENT' || status === 'COMPLETED') statusEl.className += 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20';
+        else if (status === 'PROCESSING') statusEl.className += 'bg-[#4F8CFF]/10 text-[#4F8CFF] border border-[#4F8CFF]/20';
+        else statusEl.className += 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20';
+
+        document.getElementById('d-hr-email').textContent = hrEmail || 'Not found';
+        document.getElementById('d-founder').textContent = founder && founder !== 'None' ? founder : '—';
+        document.getElementById('d-eng-lead').textContent = engLead && engLead !== 'None' ? engLead : '—';
+        document.getElementById('d-location').innerHTML = `<i class="ph-fill ph-map-pin"></i> ${location && location !== 'None' ? location : 'Remote / Unknown'}`;
+
+        const evHr = document.getElementById('d-evidence-hr');
+        if (evidenceUrl && evidenceUrl !== 'None' && evidenceUrl !== '') {
+            try {
+                let formattedEv = evidenceUrl;
+                if (!formattedEv.startsWith('http://') && !formattedEv.startsWith('https://')) {
+                    formattedEv = 'https://' + formattedEv;
+                }
+                evHr.href = formattedEv;
+            } catch(e) {
+                evHr.href = evidenceUrl;
+            }
+            evHr.classList.remove('hidden');
+        } else {
+            evHr.classList.add('hidden');
+        }
+
+        const failBox = document.getElementById('d-failure-box');
+        const failBtn = document.getElementById('d-failure-action-btn');
+        if (failureReason && failureReason !== 'None' && failureReason !== '') {
+            document.getElementById('d-failure-reason').textContent = failureReason;
+            failBox.classList.remove('hidden');
+
+            const reasonLower = failureReason.toLowerCase();
+            if (failBtn) {
+                if (reasonLower.includes('google') || reasonLower.includes('gmail') || reasonLower.includes('token') || reasonLower.includes('auth') || reasonLower.includes('permission')) {
+                    failBtn.classList.remove('hidden');
+                    failBtn.classList.add('inline-flex');
+                } else {
+                    failBtn.classList.add('hidden');
+                    failBtn.classList.remove('inline-flex');
+                }
+            }
+        } else {
+            failBox.classList.add('hidden');
+        }
+
+        const viewLogsBtn = document.getElementById('d-view-logs-btn');
+        if (viewLogsBtn) {
+            viewLogsBtn.onclick = function() {
+                if (failureReason && failureReason !== 'None' && failureReason !== '') {
+                    showToast("Log: " + failureReason);
+                } else {
+                    showToast("Log: Pipeline status is " + status + " for " + (hrEmail || name));
+                }
+            };
+        }
+
+        const drawer = document.getElementById('campaign-drawer');
+        const backdrop = document.getElementById('drawer-backdrop');
+        const panel = document.getElementById('drawer-panel');
+        
+        if (drawer) {
+            drawer.classList.remove('hidden');
+            setTimeout(() => {
+                if (backdrop) backdrop.classList.remove('opacity-0');
+                if (panel) panel.classList.remove('translate-x-full');
+            }, 10);
+        }
+    } catch (outerErr) {
+        console.error("Error opening campaign details drawer:", outerErr);
+        const drawer = document.getElementById('campaign-drawer');
+        const backdrop = document.getElementById('drawer-backdrop');
+        const panel = document.getElementById('drawer-panel');
+        if (drawer) {
+            drawer.classList.remove('hidden');
+            setTimeout(() => {
+                if (backdrop) backdrop.classList.remove('opacity-0');
+                if (panel) panel.classList.remove('translate-x-full');
+            }, 10);
+        }
     }
-    document.getElementById('d-tech').textContent = tech;
-    
-    const statusEl = document.getElementById('d-status');
-    statusEl.innerHTML = `<span>${status}</span>`;
-    statusEl.className = "px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1 ";
-    if (status === 'PENDING' || status === 'SEARCHING' || status === 'VERIFYING') statusEl.className += 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20';
-    else if (status === 'SENT' || status === 'COMPLETED') statusEl.className += 'bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20';
-    else if (status === 'PROCESSING') statusEl.className += 'bg-[#4F8CFF]/10 text-[#4F8CFF] border border-[#4F8CFF]/20';
-    else statusEl.className += 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20';
-
-    document.getElementById('d-hr-email').textContent = hrEmail || 'Not found';
-    document.getElementById('d-founder').textContent = founder && founder !== 'None' ? founder : '—';
-    document.getElementById('d-eng-lead').textContent = engLead && engLead !== 'None' ? engLead : '—';
-    document.getElementById('d-location').innerHTML = `<i class="ph-fill ph-map-pin"></i> ${location && location !== 'None' ? location : 'Remote / Unknown'}`;
-
-    const evHr = document.getElementById('d-evidence-hr');
-    if (evidenceUrl && evidenceUrl !== 'None' && evidenceUrl !== '') {
-        evHr.href = evidenceUrl;
-        evHr.classList.remove('hidden');
-    } else {
-        evHr.classList.add('hidden');
-    }
-
-    const failBox = document.getElementById('d-failure-box');
-    if (failureReason && failureReason !== 'None' && failureReason !== '') {
-        document.getElementById('d-failure-reason').textContent = failureReason;
-        failBox.classList.remove('hidden');
-    } else {
-        failBox.classList.add('hidden');
-    }
-
-    const drawer = document.getElementById('campaign-drawer');
-    const backdrop = document.getElementById('drawer-backdrop');
-    const panel = document.getElementById('drawer-panel');
-    
-    drawer.classList.remove('hidden');
-    setTimeout(() => {
-        backdrop.classList.remove('opacity-0');
-        panel.classList.remove('translate-x-full');
-    }, 10);
 }
 
 function closeDrawer() {
@@ -305,6 +365,31 @@ function startPolling() {
             console.error('Polling failed', e);
         }
     }, 5000);
+}
+
+// Retry failed campaign jobs
+async function retryCampaign(campaignId) {
+    showToast("Re-queueing failed outreach emails...");
+    try {
+        const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrfToken = csrfEl ? csrfEl.value : '';
+        const response = await fetch(`/campaigns/retry/${campaignId}/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            showToast(data.message || `Queued ${data.count} targets for retry!`);
+            setTimeout(() => { window.location.reload(); }, 1200);
+        } else {
+            showToast(data.error || data.message || 'Retry failed.');
+        }
+    } catch (err) {
+        showToast('Failed to trigger retry: ' + err.message);
+    }
 }
 
 // Only start polling on load if there are active jobs
