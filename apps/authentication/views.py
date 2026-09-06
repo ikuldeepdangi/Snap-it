@@ -69,6 +69,28 @@ def oauth_callback_view(request):
         # Update gmail_connected if granted in this request or already True
         profile.gmail_connected = has_gmail or profile.gmail_connected
         profile.save()
+
+        if profile.gmail_connected:
+            try:
+                from apps.campaigns.models import Company
+                Company.objects.filter(
+                    campaign__user=user,
+                    campaign_status='FAILED',
+                    verification_reason__icontains='google'
+                ).update(
+                    campaign_status='PENDING',
+                    verification_reason='Gmail permission granted. Ready for outreach.'
+                )
+                Company.objects.filter(
+                    campaign__user=user,
+                    campaign_status='FAILED',
+                    verification_reason__icontains='gmail'
+                ).update(
+                    campaign_status='PENDING',
+                    verification_reason='Gmail permission granted. Ready for outreach.'
+                )
+            except Exception as reset_e:
+                print(f"Failed to reset paused campaign targets: {reset_e}")
         
         # Ensure CreditWallet exists
         from apps.billing.models import CreditWallet

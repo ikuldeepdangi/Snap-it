@@ -164,6 +164,7 @@ def verify_razorpay_payment(request):
 def record_failed_payment(request):
     """
     Records a failed or cancelled Razorpay payment attempt into TransactionLedger for full audit tracking.
+    Deduplicates strictly by payment_id, order_id, or 10-second time window.
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=405)
@@ -171,15 +172,33 @@ def record_failed_payment(request):
     try:
         data = json.loads(request.body)
         amount = int(data.get('amount', 0))
-        razorpay_order_id = data.get('razorpay_order_id', '')
-        razorpay_payment_id = data.get('razorpay_payment_id', '')
-        error_description = data.get('error_description', 'Payment failed or cancelled by user')
+        razorpay_order_id = data.get('razorpay_order_id', '').strip()
+        razorpay_payment_id = data.get('razorpay_payment_id', '').strip()
+        error_description = data.get('error_description', 'Payment failed or cancelled by user').strip()
 
         wallet, _ = CreditWallet.objects.get_or_create(user=request.user)
 
-        # Check if already logged to prevent duplicates
-        if razorpay_payment_id and TransactionLedger.objects.filter(razorpay_payment_id=razorpay_payment_id).exists():
-            return JsonResponse({'status': 'ok', 'message': 'Already recorded'})
+        # 1. Deduplicate by payment_id if present
+        if razorpay_payment_id and TransactionLedger.objects.filter(wallet=wallet, razorpay_payment_id=razorpay_payment_id, status='FAILED').exists():
+            return JsonResponse({'status': 'ok', 'message': 'Already recorded by payment ID'})
+
+        # 2. Deduplicate by order_id if present
+        if razorpay_order_id and TransactionLedger.objects.filter(wallet=wallet, razorpay_order_id=razorpay_order_id, status='FAILED').exists():
+            return JsonResponse({'status': 'ok', 'message': 'Already recorded by order ID'})
+
+        # 3. Deduplicate by 10-second time window for identical wallet, amount, and reason
+        import datetime
+        from django.utils import timezone
+        recent_duplicate = TransactionLedger.objects.filter(
+            wallet=wallet,
+            amount=amount,
+            status='FAILED',
+            failure_reason=error_description,
+            created_at__gte=timezone.now() - datetime.timedelta(seconds=10)
+        ).exists()
+
+        if recent_duplicate:
+            return JsonResponse({'status': 'ok', 'message': 'Recent duplicate suppressed'})
 
         TransactionLedger.objects.create(
             wallet=wallet,

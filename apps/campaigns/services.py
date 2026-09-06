@@ -88,6 +88,15 @@ class CampaignGeneratorService:
             )
 
             raw_text = response.text
+            new_campaign.ai_response_payload = raw_text
+            new_campaign.save()
+
+            print("\n" + "=" * 60)
+            print("       PAID AI MODE RESPONSE PAYLOAD RECEIVED")
+            print("=" * 60)
+            print(raw_text)
+            print("=" * 60 + "\n")
+
             if raw_text.startswith("```json"):
                 raw_text = raw_text[7:]
             elif raw_text.startswith("```"):
