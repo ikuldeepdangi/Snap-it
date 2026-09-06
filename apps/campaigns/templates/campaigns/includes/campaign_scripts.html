@@ -200,8 +200,12 @@ document.getElementById('campaign-form').addEventListener('submit', async functi
         
         const data = await response.json();
         if (response.ok) {
-            document.getElementById('modal-status-title').innerHTML = `<span class="text-[#22C55E]">✓ Success: ${data.count} targets queued</span>`;
-            setTimeout(() => { window.location.reload(); }, 1000);
+            if (data.permission_required) {
+                document.getElementById('modal-status-title').innerHTML = `<span class="text-[#F59E0B]">⚠️ Targets created! <a href="${data.connect_url}" target="_blank" class="underline font-bold text-white hover:text-[#4F8CFF]">Grant Gmail Permission →</a> to start outreach</span>`;
+            } else {
+                document.getElementById('modal-status-title').innerHTML = `<span class="text-[#22C55E]">✓ Success: ${data.count} targets queued</span>`;
+            }
+            setTimeout(() => { window.location.reload(); }, 2500);
         } else {
             throw new Error(data.error || 'Generation failed');
         }

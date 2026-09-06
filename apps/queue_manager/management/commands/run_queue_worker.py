@@ -102,6 +102,17 @@ class Command(BaseCommand):
                 time.sleep(2)
                 continue
 
+            if is_campaign:
+                profile = getattr(user, 'profile', None)
+                has_gmail_perm = profile and (profile.gmail_connected or bool(profile.google_refresh_token or profile.google_access_token))
+                if not has_gmail_perm:
+                    job.campaign_status = 'PENDING'
+                    job.verification_reason = "Waiting for Gmail permission. Connect Google account to send."
+                    job.save()
+                    self.stdout.write(self.style.WARNING(f"Campaign target {job.id} for {user.email} kept PENDING: Waiting for Gmail permission."))
+                    time.sleep(3)
+                    continue
+
             self.stdout.write(f"Picked up Job {job.id} for {user.email}")
             
             screenshot_path = None
@@ -229,8 +240,13 @@ class Command(BaseCommand):
                     job.result_data = job.result_data or {}
                     job.result_data['worker_error'] = clean_msg
                 else:
-                    job.campaign_status = 'FAILED'
-                    job.verification_reason = clean_msg
+                    error_msg_lower = error_msg.lower()
+                    if any(term in error_msg_lower for term in ["credentials", "token", "auth", "google profile", "linked google", "permission"]):
+                        job.campaign_status = 'PENDING'
+                        job.verification_reason = "Waiting for Gmail permission. Connect Google account to send."
+                    else:
+                        job.campaign_status = 'FAILED'
+                        job.verification_reason = clean_msg
                 job.save()
                 self.stderr.write(self.style.ERROR(f"Job {job.id} FAILED: {error_msg}"))
                 

@@ -215,12 +215,39 @@
                 </div>
                 <h3 class="text-white font-bold text-lg">No campaigns yet</h3>
                 <p class="text-sm font-medium text-center max-w-xs mb-4">Create your first AI outreach campaign to start building a target matrix.</p>
-                <button onclick="openModal()" class="bg-white hover:bg-zinc-200 text-black font-bold py-2 px-5 rounded-lg transition-all text-sm flex items-center gap-2">
-                    <i class="ph-bold ph-plus"></i> New Campaign
-                </button>
             </div>
             {% endfor %}
         </div>
+
+        <!-- Pagination Controls Footer -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex-none px-6 py-3 border-t border-white/5 bg-white/[0.02] flex items-center justify-between text-xs text-zinc-400">
+            <div>
+                Showing page <span class="font-bold text-white">{{ page_obj.number }}</span> of <span class="font-bold text-white">{{ page_obj.paginator.num_pages }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700 transition-colors flex items-center gap-1">
+                    <i class="ph-bold ph-caret-left"></i> Previous
+                </a>
+                {% else %}
+                <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed flex items-center gap-1">
+                    <i class="ph-bold ph-caret-left"></i> Previous
+                </span>
+                {% endif %}
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700 transition-colors flex items-center gap-1">
+                    Next <i class="ph-bold ph-caret-right"></i>
+                </a>
+                {% else %}
+                <span class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed flex items-center gap-1">
+                    Next <i class="ph-bold ph-caret-right"></i>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
