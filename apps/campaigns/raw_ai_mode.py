@@ -192,16 +192,23 @@ class RawAICampaignGeneratorService:
         )
 
         headless_mode = os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() not in ("false", "0", "f")
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(
                 user_data_dir="./gemini_job_profile",
                 headless=headless_mode,
+                viewport={"width": 1920, "height": 1080},
+                user_agent=user_agent,
                 args=[
                     "--disable-blink-features=AutomationControlled",
-                    "--no-sandbox"
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--start-maximized",
+                    "--window-size=1920,1080"
                 ]
             )
+            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             page = context.pages[0] if context.pages else context.new_page()
 
             try:
@@ -225,10 +232,20 @@ class RawAICampaignGeneratorService:
 
                 handle_captcha_if_present(page)
 
-                target_input = page.locator("textarea, [contenteditable='true'], [role='combobox'], input[type='text']").last
-                target_input.wait_for(state="attached", timeout=12000)
-                target_input.scroll_into_view_if_needed()
-                target_input.click(force=True)
+                # Target visible input box only (ignores hidden form inputs like #xX2ctf)
+                target_input = page.locator("textarea:visible, [contenteditable='true']:visible, div[role='combobox']:visible").last
+                if not target_input.is_visible():
+                    target_input = page.locator("textarea, [contenteditable='true']").first
+
+                target_input.wait_for(state="visible", timeout=15000)
+                try:
+                    target_input.scroll_into_view_if_needed(timeout=3000)
+                except Exception:
+                    pass
+                try:
+                    target_input.click(timeout=3000)
+                except Exception:
+                    target_input.click(force=True)
 
                 page.keyboard.press("Control+A")
                 page.keyboard.press("Backspace")
