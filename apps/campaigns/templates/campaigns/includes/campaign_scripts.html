@@ -258,7 +258,16 @@ document.getElementById('campaign-form').addEventListener('submit', async functi
             steps[i].innerHTML = `<i class="ph-fill ph-check-circle text-[#22C55E]"></i> <span class="text-white">${steps[i].textContent}</span>`;
         }
         
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonErr) {
+            if (response.status === 504 || response.status === 502) {
+                throw new Error('Server request timed out. AI generation took too long.');
+            }
+            throw new Error(`Server returned invalid response (Status ${response.status})`);
+        }
+
         if (response.ok) {
             if (data.permission_required) {
                 document.getElementById('modal-status-title').innerHTML = `<span class="text-[#F59E0B]">⚠️ Targets created! <a href="${data.connect_url}" target="_blank" class="underline font-bold text-white hover:text-[#4F8CFF]">Grant Gmail Permission →</a> to start outreach</span>`;
