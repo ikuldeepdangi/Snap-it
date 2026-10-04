@@ -28,7 +28,7 @@ def handle_captcha_if_present(page):
             if submit_btn.is_visible(timeout=3000):
                 submit_btn.click()
 
-            page.wait_for_url(lambda url: "google.com/sorry" not in url, timeout=15000)
+            page.wait_for_url(lambda url: "google.com/sorry" not in url, timeout=4000)
         except Exception as e:
             logger.error(f"CAPTCHA challenge detected or bypass failed: {e}")
 
