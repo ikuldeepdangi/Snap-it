@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from typing import List, Optional, Set
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from django.conf import settings
@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 class TargetCompany(BaseModel):
     name: str = Field(description="Official company name")
     job_title: str = Field(description="Active hiring title or position")
-    hr_email: EmailStr = Field(description="Verified recruiter, careers, or HR email")
+    hr_email: str = Field(description="Verified recruiter, careers, or HR email")
     careers_url: str = Field(description="Direct URL to career portal or job post")
     city: str = Field(description="Job location or Remote")
+
 
 
 INVALID_EMAIL_DOMAINS = {
