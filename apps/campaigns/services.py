@@ -20,7 +20,7 @@ class TargetCompany(BaseModel):
     careers_url: str = Field(description="Direct URL to career portal or job post")
     city: str = Field(description="Job location or Remote")
 
-
+ 
 
 INVALID_EMAIL_DOMAINS = {
     "example.com", "company.com", "email.com", "yourcompany.com",
