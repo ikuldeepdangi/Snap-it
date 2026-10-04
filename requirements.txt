@@ -64,3 +64,5 @@ pyjwt==2.13.0
 yarl==1.24.2
 strenum==0.4.15
 playwright>=1.40.0
+email-validator>=2.0.0
+

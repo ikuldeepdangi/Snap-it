@@ -50,7 +50,10 @@ staticfiles/
 scratch/
 
 
+gemini_job_profile/
+
 # Standalone local test harnesses
 paid_api_test*.py
 *test_harness*.py
+
 
