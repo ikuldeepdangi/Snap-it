@@ -28,4 +28,4 @@ class Command(BaseCommand):
         
         self.stdout.write(self.style.SUCCESS(f"Successfully generated and saved {len(results)} valid campaign targets!"))
         for target in results:
-            self.stdout.write(f" - {target.company_name} ({target.primary_recipient_hr})")
+            self.stdout.write(f" - {target.name} ({target.hr_email or 'No email found'})")
