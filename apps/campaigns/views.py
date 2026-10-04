@@ -1,14 +1,14 @@
-from django.urls import reverse
 import os
+import json
+from django.urls import reverse
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from .models import Company, Campaign
-from .services import CampaignGeneratorService
-from .raw_ai_mode import RawAICampaignGeneratorService
-
-
 from django.core.paginator import Paginator
+
+from .models import Company, Campaign
+from .tasks import generate_campaign_targets_task
+
 
 @login_required
 def campaign_dashboard(request):
@@ -27,9 +27,9 @@ def campaign_dashboard(request):
         total_failed += targets.filter(campaign_status='FAILED').count()
         
     success_rate = round((total_sent / total_companies) * 100) if total_companies else 0
-    credits_used = total_companies * 1 # Mock mapping
+    credits_used = total_companies * 1  # Mock mapping
 
-    paginator = Paginator(all_campaigns, 7) # 7 campaigns per page
+    paginator = Paginator(all_campaigns, 7)  # 7 campaigns per page
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
@@ -53,7 +53,8 @@ def campaign_dashboard(request):
             'sent': c_sent,
             'failed': c_failed,
             'targets': targets,
-            'campaign_name': campaign.name or f"{tech} Hiring"
+            'campaign_name': campaign.name or f"{tech} Hiring",
+            'status': campaign.status,
         })
         
     profile = getattr(request.user, 'profile', None)
@@ -73,56 +74,55 @@ def campaign_dashboard(request):
         }
     })
 
+
 @login_required
 def generate_campaign_api(request):
     if request.method == 'POST':
         try:
-            city = request.POST.get('city')
-            tech = request.POST.get('tech')
-            salary = request.POST.get('salary')
-            experience = request.POST.get('experience')
-            campaign_name = request.POST.get('campaign_name')
-            max_companies_str = request.POST.get('max_companies')
-            max_companies = int(max_companies_str) if max_companies_str else 10
-            additional_notes = request.POST.get('additional_notes', '')
-
-            if not all([city, tech, salary, experience]):
-                return JsonResponse({'error': 'Missing required fields.'}, status=400)
-                
-            ai_mode = os.getenv("AI_MODE", "paid").strip().lower()
-            if ai_mode == "free":
-                service = RawAICampaignGeneratorService()
-                results = service.generate_targets(
-                    target_city=city,
-                    target_tech=tech,
-                    salary_threshold=salary,
-                    experience_tier=experience,
-                    max_companies=max_companies,
-                    user=request.user,
-                    campaign_name=campaign_name,
-                    additional_notes=additional_notes
-                )
+            if request.content_type == 'application/json':
+                data = json.loads(request.body.decode('utf-8'))
             else:
-                service = CampaignGeneratorService()
-                results = service.generate_targets(
-                    target_city=city,
-                    target_tech=tech,
-                    salary_threshold=salary,
-                    experience_tier=experience,
-                    max_companies=max_companies,
-                    use_grounding=True,
-                    user=request.user,
-                    campaign_name=campaign_name,
-                    additional_notes=additional_notes
-                )
+                data = request.POST
 
+            city = data.get('city') or data.get('target_city')
+            tech = data.get('tech') or data.get('tech_stack')
+            salary = data.get('salary', '')
+            experience = data.get('experience') or data.get('experience_level', '')
+            campaign_name = data.get('campaign_name')
+            target_count_raw = data.get('target_count') or data.get('max_companies')
+            target_count = int(target_count_raw) if target_count_raw else 12
+
+            if not city or not tech:
+                return JsonResponse({'error': 'Missing required fields: city and tech/tech_stack.'}, status=400)
+
+            # Persist initial Campaign record with status=PENDING
+            campaign = Campaign.objects.create(
+                user=request.user,
+                name=campaign_name or f"{tech} Hiring ({city})",
+                city=city,
+                tech=tech,
+                experience=experience,
+                salary=salary,
+                status='PENDING'
+            )
+
+            # Immediately trigger background task without blocking the HTTP request
+            try:
+                generate_campaign_targets_task.delay(campaign.id, target_count=target_count)
+            except Exception:
+                # Fallback if Celery broker is not active in current environment
+                generate_campaign_targets_task(campaign.id, target_count=target_count)
 
             profile = getattr(request.user, 'profile', None)
             has_gmail = profile and (profile.gmail_connected or bool(profile.google_access_token or profile.google_refresh_token))
 
-            resp_data = {'success': True, 'count': len(results)}
+            resp_data = {
+                'success': True,
+                'campaign_id': campaign.id,
+                'status': 'PENDING'
+            }
             if not has_gmail:
-                resp_data['warning'] = 'Campaign targets generated! Please connect your Google/Gmail account to send outreach emails.'
+                resp_data['warning'] = 'Campaign queued! Please connect your Google/Gmail account to send outreach emails.'
                 resp_data['permission_required'] = True
                 resp_data['connect_url'] = reverse('connect_gmail')
 
@@ -131,5 +131,5 @@ def generate_campaign_api(request):
             return JsonResponse({'error': f'Invalid input format: {str(e)}'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-    
+
     return JsonResponse({'error': 'Invalid request method.'}, status=405)
